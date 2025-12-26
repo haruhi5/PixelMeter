@@ -2,6 +2,7 @@ package vip.mystery0.pixelpulse.ui
 
 import android.app.Application
 import android.content.Intent
+import android.os.Build
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.delay
@@ -24,6 +25,7 @@ class MainViewModel(
     val shizukuPermissionGranted = repository.shizukuPermissionGranted
     val blacklistedInterfaces = repository.blacklistedInterfaces
     val isOverlayEnabled = repository.isOverlayEnabled
+    val hasUsagePermission = repository.hasUsagePermission
 
     private val _isServiceRunning = MutableStateFlow(false)
     val isServiceRunning = _isServiceRunning.asStateFlow()
@@ -41,19 +43,62 @@ class MainViewModel(
         }
     }
 
-    fun toggleService(enable: Boolean) {
+    private val _serviceStartError = MutableStateFlow<Pair<String, String>?>(null)
+    val serviceStartError = _serviceStartError.asStateFlow()
+
+    fun startService() {
+        _serviceStartError.value = null
+
+        // 1. Check Notification Permission (Android 13+)
+        if (Build.VERSION.SDK_INT >= 33) {
+            if (androidx.core.content.ContextCompat.checkSelfPermission(
+                    application,
+                    android.Manifest.permission.POST_NOTIFICATIONS
+                ) != android.content.pm.PackageManager.PERMISSION_GRANTED
+            ) {
+                _serviceStartError.value =
+                    "Notification permission required" to android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS
+                return
+            }
+        }
+
+        // 2. Check Overlay Permission if enabled
+        if (isOverlayEnabled.value) {
+            if (Build.VERSION.SDK_INT >= 23 && !android.provider.Settings.canDrawOverlays(
+                    application
+                )
+            ) {
+                _serviceStartError.value =
+                    "Overlay permission required for Floating Window" to android.provider.Settings.ACTION_MANAGE_OVERLAY_PERMISSION
+                return
+            }
+        }
+
         val intent = Intent(application, NetworkMonitorService::class.java)
-        if (enable) {
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+        try {
+            if (Build.VERSION.SDK_INT >= 26) {
                 application.startForegroundService(intent)
             } else {
                 application.startService(intent)
             }
             _isServiceRunning.value = true
-        } else {
-            application.stopService(intent)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            _serviceStartError.value =
+                "Failed to start service: ${e.message}" to android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS
             _isServiceRunning.value = false
         }
+    }
+
+    fun stopService() {
+        val intent = Intent(application, NetworkMonitorService::class.java)
+        application.stopService(intent)
+        _isServiceRunning.value = false
+        _serviceStartError.value = null
+    }
+
+    fun clearError() {
+        _serviceStartError.value = null
     }
 
     fun setShizukuMode(enable: Boolean) {
@@ -62,6 +107,10 @@ class MainViewModel(
 
     fun setOverlayEnabled(enable: Boolean) {
         repository.setOverlayEnabled(enable)
+    }
+
+    fun checkUsagePermission() { // Added
+        repository.checkUsagePermission()
     }
 
     fun requestShizukuPermission() {

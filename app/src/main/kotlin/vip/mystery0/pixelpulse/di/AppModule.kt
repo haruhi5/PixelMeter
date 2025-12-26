@@ -20,7 +20,7 @@ val appModule = module {
     single { StandardSpeedDataSource(androidContext(), get()) }
     single { ShizukuSpeedDataSource() }
 
-    single { NetworkRepository(get(), get()) }
+    single { NetworkRepository(get(), get(), get()) }
 
     factory { NotificationHelper(androidContext()) }
     factory { OverlayWindow(androidContext()) }

@@ -1,18 +1,23 @@
 package vip.mystery0.pixelpulse.data.repository
 
+import android.app.AppOpsManager
+import android.content.Context
 import android.content.pm.PackageManager
+import android.os.Process
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import org.koin.core.component.KoinComponent
 import rikka.shizuku.Shizuku
 import vip.mystery0.pixelpulse.data.source.NetSpeedData
 import vip.mystery0.pixelpulse.data.source.impl.ShizukuSpeedDataSource
 import vip.mystery0.pixelpulse.data.source.impl.StandardSpeedDataSource
 
 class NetworkRepository(
+    private val context: Context,
     private val standardDataSource: StandardSpeedDataSource,
     private val shizukuDataSource: ShizukuSpeedDataSource
-) {
+) : KoinComponent {
     private val _isShizukuMode = MutableStateFlow(false)
     val isShizukuMode: StateFlow<Boolean> = _isShizukuMode.asStateFlow()
 
@@ -24,6 +29,9 @@ class NetworkRepository(
 
     private val _isOverlayEnabled = MutableStateFlow(false)
     val isOverlayEnabled: StateFlow<Boolean> = _isOverlayEnabled.asStateFlow()
+
+    private val _hasUsagePermission = MutableStateFlow(false)
+    val hasUsagePermission: StateFlow<Boolean> = _hasUsagePermission.asStateFlow()
 
     private val binderDeadListener = Shizuku.OnBinderDeadListener {
         _shizukuPermissionGranted.tryEmit(false)
@@ -77,6 +85,16 @@ class NetworkRepository(
         if (enable) {
             checkShizukuPermission()
         }
+    }
+
+    fun checkUsagePermission() {
+        val appOps = context.getSystemService(Context.APP_OPS_SERVICE) as AppOpsManager
+        val mode = appOps.unsafeCheckOpNoThrow(
+            AppOpsManager.OPSTR_GET_USAGE_STATS,
+            Process.myUid(),
+            context.packageName
+        )
+        _hasUsagePermission.value = (mode == AppOpsManager.MODE_ALLOWED)
     }
 
     fun updateBlacklist(list: Set<String>) {

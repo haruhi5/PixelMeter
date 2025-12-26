@@ -1,8 +1,10 @@
 package vip.mystery0.pixelpulse.data.source.impl
 
+import android.app.AppOpsManager
 import android.app.usage.NetworkStatsManager
 import android.content.Context
 import android.net.NetworkCapabilities
+import android.os.Process
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import vip.mystery0.pixelpulse.data.source.ISpeedDataSource
@@ -13,11 +15,23 @@ class StandardSpeedDataSource(
     private val networkStatsManager: NetworkStatsManager
 ) : ISpeedDataSource {
 
+    private fun hasPermission(): Boolean {
+        val appOps = context.getSystemService(Context.APP_OPS_SERVICE) as AppOpsManager
+        val mode = appOps.unsafeCheckOpNoThrow(
+            AppOpsManager.OPSTR_GET_USAGE_STATS,
+            Process.myUid(),
+            context.packageName
+        )
+        return mode == AppOpsManager.MODE_ALLOWED
+    }
+
     private var lastTotalRxBytes = 0L
     private var lastTotalTxBytes = 0L
     private var lastTime = 0L
 
     override suspend fun getNetSpeed(): NetSpeedData = withContext(Dispatchers.IO) {
+        if (!hasPermission()) return@withContext NetSpeedData(0, 0)
+
         val currentTime = System.currentTimeMillis()
         val timeDelta = currentTime - lastTime
 

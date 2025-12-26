@@ -1,5 +1,7 @@
 package vip.mystery0.pixelpulse.ui.home
 
+import android.content.Intent
+import android.provider.Settings
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -7,9 +9,11 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -24,6 +28,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -31,7 +36,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import org.koin.androidx.compose.koinViewModel
 import rikka.shizuku.Shizuku
 import vip.mystery0.pixelpulse.data.source.NetSpeedData
@@ -48,7 +56,19 @@ fun HomeScreen(
     val isGranted by viewModel.shizukuPermissionGranted.collectAsState()
     val isServiceRunning by viewModel.isServiceRunning.collectAsState()
     val isOverlayEnabled by viewModel.isOverlayEnabled.collectAsState()
+    val hasUsagePermission by viewModel.hasUsagePermission.collectAsState()
     val blacklist by viewModel.blacklistedInterfaces.collectAsState()
+    val serviceError by viewModel.serviceStartError.collectAsState()
+
+    val context = LocalContext.current
+    LaunchedEffect(Unit) {
+        viewModel.checkUsagePermission()
+    }
+
+    // Resume check
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
+        viewModel.checkUsagePermission()
+    }
 
     Scaffold(
         topBar = { TopAppBar(title = { Text("Pixel Pulse") }) }
@@ -59,6 +79,32 @@ fun HomeScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            if (!isShizuku && !hasUsagePermission) {
+                item {
+                    Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text(
+                                "Usage Access Required",
+                                style = MaterialTheme.typography.labelLarge,
+                                color = MaterialTheme.colorScheme.onErrorContainer
+                            )
+                            Text(
+                                "Standard mode needs 'Usage Access' permission to read network stats.",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onErrorContainer
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            androidx.compose.material3.Button(onClick = {
+                                val intent = Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)
+                                context.startActivity(intent)
+                            }) {
+                                Text("Open Settings")
+                            }
+                        }
+                    }
+                }
+            }
+
             item {
                 SpeedDashboardCard(speed)
             }
@@ -71,13 +117,105 @@ fun HomeScreen(
                 )
             }
 
+            // Service Permission Error Card
+            if (serviceError != null) {
+                item {
+                    Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text(
+                                "Service Error",
+                                style = MaterialTheme.typography.labelLarge,
+                                color = MaterialTheme.colorScheme.onErrorContainer
+                            )
+                            Text(
+                                serviceError?.first ?: "Unknown error",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onErrorContainer
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                androidx.compose.material3.Button(onClick = {
+                                    serviceError?.let { (_, action) ->
+                                        val intent = Intent(action)
+                                        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                                        if (action == Settings.ACTION_MANAGE_OVERLAY_PERMISSION ||
+                                            action == Settings.ACTION_APP_NOTIFICATION_SETTINGS ||
+                                            action == Settings.ACTION_APPLICATION_DETAILS_SETTINGS
+                                        ) {
+                                            intent.data =
+                                                android.net.Uri.parse("package:${context.packageName}")
+                                        }
+                                        context.startActivity(intent)
+                                        viewModel.clearError()
+                                    }
+                                }) {
+                                    Text("Request / Fix")
+                                }
+                                androidx.compose.material3.Button(
+                                    onClick = { viewModel.clearError() },
+                                    colors = androidx.compose.material3.ButtonDefaults.textButtonColors()
+                                ) {
+                                    Text("Dismiss")
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
             item {
-                ConfigRow(
-                    title = "Enable Monitor",
-                    subtitle = "Start foreground service",
-                    checked = isServiceRunning,
-                    onCheckedChange = { viewModel.toggleService(it) }
+                Text(
+                    "Monitor Control",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.primary
                 )
+            }
+
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = if (isServiceRunning) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant
+                    )
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                if (isServiceRunning) Icons.Default.Check else Icons.Default.Close,
+                                contentDescription = null,
+                                tint = if (isServiceRunning) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Text(
+                                text = if (isServiceRunning) "Monitor is Running" else "Monitor is Stopped",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = if (isServiceRunning) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Spacer(Modifier.height(16.dp))
+                        Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                            // Start Button
+                            androidx.compose.material3.Button(
+                                onClick = { viewModel.startService() },
+                                enabled = !isServiceRunning,
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text("Start")
+                            }
+                            // Stop Button
+                            androidx.compose.material3.Button(
+                                onClick = { viewModel.stopService() },
+                                enabled = isServiceRunning,
+                                colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.error
+                                ),
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text("Stop")
+                            }
+                        }
+                    }
+                }
             }
 
             item {
