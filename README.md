@@ -1,7 +1,7 @@
 # Pixel Meter
 
 <p align="center">
-  <img src="app/src/main/ic_launcher-playstore.png" width="200" alt="PixelMeter Logo"/>
+  <img src="app/src/main/ic_launcher-playstore.png" width="200" alt="Pixel Meter Logo"/>
 </p>
 
 <p align="center">
@@ -16,12 +16,12 @@
 
 ## About
 
-PixelMeter is a network speed monitor application designed specifically for Google Pixel and native
-Android devices. Unlike traditional speed monitors, PixelMeter solves a common issue where using a
+Pixel Meter is a network speed monitor application designed specifically for Google Pixel and native
+Android devices. Unlike traditional speed monitors, Pixel Meter solves a common issue where using a
 VPN causes the displayed network speed to be double the actual speed (counting both the physical
 interface and the virtual VPN interface).
 
-**PixelMeter intelligently filters out VPN traffic**, directly reading from physical network
+**Pixel Meter intelligently filters out VPN traffic**, directly reading from physical network
 interfaces (Wi-Fi, Cellular, Ethernet) to provide accurate real-time speed statistics.
 
 ## Screenshots

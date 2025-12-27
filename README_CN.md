@@ -1,7 +1,7 @@
 # Pixel Meter
 
 <p align="center">
-  <img src="app/src/main/ic_launcher-playstore.png" width="200" alt="PixelMeter Logo"/>
+  <img src="app/src/main/ic_launcher-playstore.png" width="200" alt="Pixel Meter Logo"/>
 </p>
 
 <p align="center">
@@ -16,10 +16,10 @@
 
 ## 简介
 
-PixelMeter 是一款专为 Google Pixel 和原生 Android 设备设计的网速监控应用。它可以解决在使用 VPN
+Pixel Meter 是一款专为 Google Pixel 和原生 Android 设备设计的网速监控应用。它可以解决在使用 VPN
 时，传统网速显示应用因同时统计物理接口和虚拟接口流量而导致显示速度翻倍的问题。
 
-**PixelMeter 智能过滤 VPN 流量**，直接从物理网络接口（Wi-Fi、蜂窝网络、以太网）读取数据，提供精准的实时网速统计。
+**Pixel Meter 智能过滤 VPN 流量**，直接从物理网络接口（Wi-Fi、蜂窝网络、以太网）读取数据，提供精准的实时网速统计。
 
 ## 软件截图
 
