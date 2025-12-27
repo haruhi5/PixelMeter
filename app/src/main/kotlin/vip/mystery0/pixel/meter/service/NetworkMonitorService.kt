@@ -90,6 +90,7 @@ class NetworkMonitorService : Service() {
     override fun onDestroy() {
         super.onDestroy()
         serviceJob?.cancel()
+        overlayWindow.hide()
         repository.stopMonitoring()
         stopForeground(STOP_FOREGROUND_REMOVE)
     }

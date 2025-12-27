@@ -22,6 +22,10 @@
     <string name="config_enable_live_update">Enable Live Update</string>
     <string name="config_enable_live_update_desc">Use status bar chip</string>
 
+    <string name="title_tools">Tools</string>
+    <string name="action_speed_test">Speed Test</string>
+    <string name="desc_speed_test">Run speed test via Cloudflare</string>
+
     <string name="error_unknown">Unknown error</string>
     <string name="error_notification_permission">Notification permission required</string>
     <string name="error_overlay_permission">Overlay permission required for Floating Window</string>

@@ -10,6 +10,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
+import androidx.browser.customtabs.CustomTabsIntent
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -22,6 +23,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.NetworkCheck
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -58,6 +60,14 @@ class MainActivity : ComponentActivity() {
                 HomeScreen()
             }
         }
+    }
+
+    private fun launchSpeedTest(context: android.content.Context) {
+        val url = "https://speed.cloudflare.com"
+        val customTabsIntent = CustomTabsIntent.Builder()
+            .setShowTitle(true)
+            .build()
+        customTabsIntent.launchUrl(context, url.toUri())
     }
 
     @Composable
@@ -252,6 +262,49 @@ class MainActivity : ComponentActivity() {
                             checked = isLiveUpdateEnabled,
                             onCheckedChange = { viewModel.setLiveUpdateEnabled(it) }
                         )
+                    }
+                }
+
+                item {
+                    Text(
+                        stringResource(R.string.title_tools),
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+                item {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        onClick = { launchSpeedTest(context) },
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant
+                        )
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .padding(16.dp)
+                                .fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                Icons.Default.NetworkCheck,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Spacer(Modifier.width(16.dp))
+                            Column {
+                                Text(
+                                    text = stringResource(R.string.action_speed_test),
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Text(
+                                    text = stringResource(R.string.desc_speed_test),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
                     }
                 }
             }
