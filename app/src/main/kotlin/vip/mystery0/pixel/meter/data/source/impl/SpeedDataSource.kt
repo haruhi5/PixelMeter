@@ -20,6 +20,7 @@ class SpeedDataSource(
         // 注意：在开启 VPN 时，这里通常会包含两个网络：
         // 1. 物理网络 (如 Wi-Fi)
         // 2. 虚拟网络 (VPN)
+        @Suppress("DEPRECATION")
         val allNetworks: Array<Network> = connectivityManager.allNetworks
 
         for (network in allNetworks) {

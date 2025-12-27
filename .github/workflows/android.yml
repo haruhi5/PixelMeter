@@ -32,22 +32,21 @@ jobs:
           SIGN_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           SIGN_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
-          ./gradlew assembleRelease
+          ./gradlew bundleRelease
       - name: Install jq
-        run: sudo apt-get install jq
+        run: sudo apt-get install wget -y
       - name: Parse build files
         id: apk
         run: |
-          versionName=$(cat "app/build/outputs/apk/release/output-metadata.json" | jq -r '.elements[0].versionName')
-          versionCode=$(cat "app/build/outputs/apk/release/output-metadata.json" | jq -r '.elements[0].versionCode')
-          mkdir outputs
-          mv "app/build/outputs/apk/release/app-release.apk" "outputs/app-release.apk"
-          echo "versionName=$versionName" >> $GITHUB_OUTPUT
-          echo "versionCode=$versionCode" >> $GITHUB_OUTPUT
+          wget -q -O /tmp/bundletool.jar https://github.com/google/bundletool/releases/download/1.18.2/bundletool-all-1.18.2.jar
+          fileName=$(ls ${{ env.OUTPUT_DIR }}/ | head -n 1)
+          versionName=$(java -jar /tmp/bundletool.jar dump manifest --bundle ${{ env.OUTPUT_DIR }}/$fileName --xpath /manifest/@android:versionName)
+          echo "versionName=$versionName" >> $GITHUB_ENV
+          echo "fileName=$fileName" >> $GITHUB_ENV
       - name: Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ steps.apk.outputs.versionName }}
+          tag_name: ${{ env.versionName }}
           body_path: CHANGELOG.md
           files: |
-            outputs/app-release.apk
+            ${{ env.OUTPUT_DIR }}/${{ env.fileName }}
