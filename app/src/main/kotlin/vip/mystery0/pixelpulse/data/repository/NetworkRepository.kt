@@ -14,17 +14,20 @@ import kotlinx.coroutines.launch
 import org.koin.core.component.KoinComponent
 import vip.mystery0.pixelpulse.data.source.NetSpeedData
 import vip.mystery0.pixelpulse.data.source.impl.SpeedDataSource
+import java.util.Locale
 
 class NetworkRepository(
     private val standardDataSource: SpeedDataSource,
     private val prefs: SharedPreferences
 ) : KoinComponent {
-
     private val _isOverlayEnabled = MutableStateFlow(false)
     val isOverlayEnabled: StateFlow<Boolean> = _isOverlayEnabled.asStateFlow()
 
     private val _isLiveUpdateEnabled = MutableStateFlow(false)
     val isLiveUpdateEnabled: StateFlow<Boolean> = _isLiveUpdateEnabled.asStateFlow()
+
+    private val _isMonitoring = MutableStateFlow(false)
+    val isMonitoring: StateFlow<Boolean> = _isMonitoring.asStateFlow()
 
     private val _netSpeed = MutableStateFlow(NetSpeedData(0, 0))
     val netSpeed: StateFlow<NetSpeedData> = _netSpeed.asStateFlow()
@@ -37,7 +40,6 @@ class NetworkRepository(
     private var lastTime = 0L
 
     init {
-        // Initialize Live Update settings
         _isLiveUpdateEnabled.value = prefs.getBoolean("key_live_update", false)
     }
 
@@ -57,6 +59,8 @@ class NetworkRepository(
         lastTotalRxBytes = 0L
         lastTotalTxBytes = 0L
         lastTime = 0L
+
+        _isMonitoring.value = true
 
         monitoringJob = scope.launch {
             while (isActive) {
@@ -107,5 +111,39 @@ class NetworkRepository(
     fun stopMonitoring() {
         monitoringJob?.cancel()
         monitoringJob = null
+        _isMonitoring.value = false
+    }
+
+    companion object {
+        fun formatSpeedTextForLiveUpdate(bytes: Long): String {
+            if (bytes < 1024) return "${bytes}B/s"
+            val kb = bytes / 1024.0
+            if (kb < 1000) return "${"%.0f".format(Locale.US, kb)}K/s"
+            val mb = kb / 1024.0
+            if (mb < 1000) {
+                return if (mb < 100) "${"%.1f".format(Locale.US, mb)}M/s"
+                else "${"%.0f".format(Locale.US, mb)}M/s"
+            }
+            val gb = mb / 1024.0
+            return "${"%.1f".format(Locale.US, gb)}G/s"
+        }
+
+        fun formatSpeedText(bytes: Long): Pair<String, String> {
+            if (bytes < 1024) return bytes.toString() to "B/s"
+            val kb = bytes / 1024.0
+            if (kb < 1000) return "%.0f".format(Locale.US, kb) to "KB/s"
+            val mb = kb / 1024.0
+            if (mb < 1000) {
+                return if (mb < 10) "%.1f".format(Locale.US, mb) to "MB/s"
+                else "%.0f".format(Locale.US, mb) to "MB/s"
+            }
+            val gb = mb / 1024.0
+            return "%.1f".format(Locale.US, gb) to "GB/s"
+        }
+
+        fun formatSpeedLine(bytes: Long): String {
+            val (v, u) = formatSpeedText(bytes)
+            return "$v$u"
+        }
     }
 }

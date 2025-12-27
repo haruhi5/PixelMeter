@@ -4,6 +4,7 @@ import android.app.Application
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.provider.Settings
+import android.util.Log
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.AndroidViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -16,6 +17,10 @@ import vip.mystery0.pixelpulse.service.NetworkMonitorService
 class MainViewModel(
     private val application: Application,
 ) : AndroidViewModel(application), KoinComponent {
+    companion object {
+        private const val TAG = "MainViewModel"
+    }
+
     private val repository: NetworkRepository by inject()
 
     val currentSpeed = repository.netSpeed
@@ -24,8 +29,7 @@ class MainViewModel(
 
     val isLiveUpdateEnabled = repository.isLiveUpdateEnabled
 
-    private val _isServiceRunning = MutableStateFlow(false)
-    val isServiceRunning = _isServiceRunning.asStateFlow()
+    val isServiceRunning = repository.isMonitoring
 
     private val _serviceStartError = MutableStateFlow<Pair<String, String>?>(null)
     val serviceStartError = _serviceStartError.asStateFlow()
@@ -56,19 +60,16 @@ class MainViewModel(
         val intent = Intent(application, NetworkMonitorService::class.java)
         try {
             application.startForegroundService(intent)
-            _isServiceRunning.value = true
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "startService: start foreground service error", e)
             _serviceStartError.value =
                 "Failed to start service: ${e.message}" to Settings.ACTION_APPLICATION_DETAILS_SETTINGS
-            _isServiceRunning.value = false
         }
     }
 
     fun stopService() {
         val intent = Intent(application, NetworkMonitorService::class.java)
         application.stopService(intent)
-        _isServiceRunning.value = false
         _serviceStartError.value = null
     }
 

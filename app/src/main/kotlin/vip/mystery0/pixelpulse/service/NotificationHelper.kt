@@ -16,8 +16,8 @@ import androidx.core.app.NotificationCompat
 import androidx.core.graphics.createBitmap
 import vip.mystery0.pixelpulse.MainActivity
 import vip.mystery0.pixelpulse.R
+import vip.mystery0.pixelpulse.data.repository.NetworkRepository
 import vip.mystery0.pixelpulse.data.source.NetSpeedData
-import java.util.Locale
 import kotlin.math.roundToInt
 
 class NotificationHelper(private val context: Context) {
@@ -89,15 +89,13 @@ class NotificationHelper(private val context: Context) {
         val notification: Notification
         if (isLiveUpdate) {
             // Use static icon (Notification icon shouldn't show speed in this mode)
-            val statusText = formatSpeedTextForLiveUpdate(speed.totalSpeed)
+            val statusText = NetworkRepository.formatSpeedTextForLiveUpdate(speed.totalSpeed)
 
             notification = NotificationCompat.Builder(context, CHANNEL_ID)
                 .setContentTitle("Network Speed")
                 .setContentText(
-                    "▼ ${formatSpeedLine(speed.downloadSpeed)}  ▲ ${
-                        formatSpeedLine(
-                            speed.uploadSpeed
-                        )
+                    "▼ ${NetworkRepository.formatSpeedLine(speed.downloadSpeed)}  ▲ ${
+                        NetworkRepository.formatSpeedLine(speed.uploadSpeed)
                     }"
                 )
                 .setSmallIcon(R.drawable.ic_speed)
@@ -109,7 +107,7 @@ class NotificationHelper(private val context: Context) {
                 .build()
         } else {
             // Standard Mode
-            val (valueStr, unitStr) = formatSpeedText(speed.totalSpeed)
+            val (valueStr, unitStr) = NetworkRepository.formatSpeedText(speed.totalSpeed)
             // Draw Bitmap with speed
             bitmap.eraseColor(Color.TRANSPARENT)
             val cx = size / 2f
@@ -124,10 +122,8 @@ class NotificationHelper(private val context: Context) {
             notification = Notification.Builder(context, CHANNEL_ID)
                 .setContentTitle("Network Speed")
                 .setContentText(
-                    "RX ${formatSpeedLine(speed.downloadSpeed)}  TX ${
-                        formatSpeedLine(
-                            speed.uploadSpeed
-                        )
+                    "RX ${NetworkRepository.formatSpeedLine(speed.downloadSpeed)}  TX ${
+                        NetworkRepository.formatSpeedLine(speed.uploadSpeed)
                     }"
                 )
                 .setSmallIcon(smallIcon)
@@ -139,36 +135,5 @@ class NotificationHelper(private val context: Context) {
                 .build()
         }
         return notification
-    }
-
-    private fun formatSpeedTextForLiveUpdate(bytes: Long): String {
-        if (bytes < 1024) return "${bytes}B/s"
-        val kb = bytes / 1024.0
-        if (kb < 1000) return "${"%.0f".format(Locale.US, kb)}K/s"
-        val mb = kb / 1024.0
-        if (mb < 1000) {
-            return if (mb < 100) "${"%.1f".format(Locale.US, mb)}M/s"
-            else "${"%.0f".format(Locale.US, mb)}M/s"
-        }
-        val gb = mb / 1024.0
-        return "${"%.1f".format(Locale.US, gb)}G/s"
-    }
-
-    private fun formatSpeedText(bytes: Long): Pair<String, String> {
-        if (bytes < 1024) return bytes.toString() to "B/s"
-        val kb = bytes / 1024.0
-        if (kb < 1000) return "%.0f".format(Locale.US, kb) to "KB/s"
-        val mb = kb / 1024.0
-        if (mb < 1000) {
-            return if (mb < 10) "%.1f".format(Locale.US, mb) to "MB/s"
-            else "%.0f".format(Locale.US, mb) to "MB/s"
-        }
-        val gb = mb / 1024.0
-        return "%.1f".format(Locale.US, gb) to "GB/s"
-    }
-
-    private fun formatSpeedLine(bytes: Long): String {
-        val (v, u) = formatSpeedText(bytes)
-        return "$v$u"
     }
 }

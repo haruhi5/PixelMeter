@@ -5,6 +5,7 @@ import android.app.Service
 import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.os.IBinder
+import android.util.Log
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -16,6 +17,10 @@ import vip.mystery0.pixelpulse.data.source.NetSpeedData
 import vip.mystery0.pixelpulse.ui.overlay.OverlayWindow
 
 class NetworkMonitorService : Service() {
+    companion object {
+        private const val TAG = "NetworkMonitorService"
+    }
+
     private val repository: NetworkRepository by inject()
     private val notificationHelper by lazy { NotificationHelper(this) }
     private val notificationManager by lazy { getSystemService(NOTIFICATION_SERVICE) as NotificationManager }
@@ -41,7 +46,7 @@ class NetworkMonitorService : Service() {
                 ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
             )
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "onStartCommand: start foreground error", e)
             stopSelf()
             return START_NOT_STICKY
         }
@@ -55,16 +60,20 @@ class NetworkMonitorService : Service() {
 
         // Start Repository Monitoring
         repository.startMonitoring()
-        
+
         serviceJob = scope.launch {
             repository.netSpeed.collect { speed ->
                 // Overlay logic
                 withContext(Dispatchers.Main) {
-                    if (repository.isOverlayEnabled.value) {
-                        overlayWindow.show()
-                        overlayWindow.update(speed)
-                    } else {
-                        overlayWindow.hide()
+                    try {
+                        if (repository.isOverlayEnabled.value) {
+                            overlayWindow.show()
+                            overlayWindow.update(speed)
+                        } else {
+                            overlayWindow.hide()
+                        }
+                    } catch (e: Exception) {
+                        Log.w(TAG, "startMonitoring: overlay window error", e)
                     }
                 }
 

@@ -33,9 +33,9 @@ import androidx.savedstate.SavedStateRegistry
 import androidx.savedstate.SavedStateRegistryController
 import androidx.savedstate.SavedStateRegistryOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
+import vip.mystery0.pixelpulse.data.repository.NetworkRepository
 import vip.mystery0.pixelpulse.data.source.NetSpeedData
 import vip.mystery0.pixelpulse.ui.theme.PixelPulseTheme
-import java.util.Locale
 
 class OverlayWindow(private val context: Context) : LifecycleOwner, ViewModelStoreOwner,
     SavedStateRegistryOwner {
@@ -150,24 +150,16 @@ fun OverlayContent(speed: NetSpeedData) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "▼ ${formatSpeed(speed.downloadSpeed)}",
+                text = "▼ ${NetworkRepository.formatSpeedLine(speed.downloadSpeed)}",
                 style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
                 color = MaterialTheme.colorScheme.onSurface
             )
             Box(modifier = Modifier.padding(horizontal = 4.dp))
             Text(
-                text = "▲ ${formatSpeed(speed.uploadSpeed)}",
+                text = "▲ ${NetworkRepository.formatSpeedLine(speed.uploadSpeed)}",
                 style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
                 color = MaterialTheme.colorScheme.onSurface
             )
         }
     }
-}
-
-private fun formatSpeed(bytes: Long): String {
-    if (bytes < 1024) return "${bytes}B"
-    val kb = bytes / 1024.0
-    if (kb < 1000) return "%.0fK".format(Locale.US, kb)
-    val mb = kb / 1024.0
-    return "%.1fM".format(Locale.US, mb)
 }
