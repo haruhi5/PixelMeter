@@ -265,14 +265,14 @@ fun SpeedDashboardCard(speed: NetSpeedData) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text("Download", style = MaterialTheme.typography.bodySmall)
                     Text(
-                        "â–?" + formatSpeed(speed.downloadSpeed),
+                        "â–¼ " + formatSpeed(speed.downloadSpeed),
                         style = MaterialTheme.typography.titleMedium
                     )
                 }
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text("Upload", style = MaterialTheme.typography.bodySmall)
                     Text(
-                        "â–?" + formatSpeed(speed.uploadSpeed),
+                        "â–² " + formatSpeed(speed.uploadSpeed),
                         style = MaterialTheme.typography.titleMedium
                     )
                 }

@@ -114,7 +114,7 @@ class NotificationHelper(private val context: Context) {
             builder
                 .setContentTitle("Network Speed")
                 .setContentText(
-                    "â–?${NetworkRepository.formatSpeedLine(speed.downloadSpeed)}  â–?${
+                    "â–¼ ${NetworkRepository.formatSpeedLine(speed.downloadSpeed)} â–² ${
                         NetworkRepository.formatSpeedLine(speed.uploadSpeed)
                     }"
                 )
