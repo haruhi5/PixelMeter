@@ -17,7 +17,7 @@ import vip.mystery0.pixel.meter.data.source.impl.SpeedDataSource
 import java.util.Locale
 
 class NetworkRepository(
-    private val standardDataSource: SpeedDataSource,
+    private val dataSource: SpeedDataSource,
     private val dataStoreRepository: DataStoreRepository,
 ) : KoinComponent {
     private val _isOverlayEnabled = MutableStateFlow(false)
@@ -107,7 +107,7 @@ class NetworkRepository(
         monitoringJob = scope.launch {
             while (isActive) {
                 val startTime = System.currentTimeMillis()
-                val source = standardDataSource
+                val source = dataSource
 
                 val interval = 1000L
 
@@ -154,6 +154,7 @@ class NetworkRepository(
         monitoringJob?.cancel()
         monitoringJob = null
         _isMonitoring.value = false
+        _netSpeed.value = NetSpeedData(0, 0)
     }
 
     companion object {

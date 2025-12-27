@@ -73,10 +73,13 @@ class MainViewModel(
         }
     }
 
-    fun stopService() {
+    fun stopService(clearError: Boolean = true) {
         val intent = Intent(application, NetworkMonitorService::class.java)
         application.stopService(intent)
-        _serviceStartError.value = null
+
+        if (clearError) {
+            clearError()
+        }
     }
 
     fun clearError() {
@@ -84,6 +87,13 @@ class MainViewModel(
     }
 
     fun setOverlayEnabled(enable: Boolean) {
+        if (enable && isServiceRunning.value) {
+            if (!Settings.canDrawOverlays(application)) {
+                _serviceStartError.value =
+                    application.getString(R.string.error_overlay_permission) to Settings.ACTION_MANAGE_OVERLAY_PERMISSION
+                stopService(false)
+            }
+        }
         repository.setOverlayEnabled(enable)
     }
 
@@ -96,6 +106,17 @@ class MainViewModel(
     }
 
     fun setNotificationEnabled(enable: Boolean) {
+        if (enable && isServiceRunning.value) {
+            if (ContextCompat.checkSelfPermission(
+                    application,
+                    android.Manifest.permission.POST_NOTIFICATIONS
+                ) != PackageManager.PERMISSION_GRANTED
+            ) {
+                _serviceStartError.value =
+                    application.getString(R.string.error_notification_permission) to Settings.ACTION_APP_NOTIFICATION_SETTINGS
+                stopService(false)
+            }
+        }
         repository.setNotificationEnabled(enable)
     }
 }
