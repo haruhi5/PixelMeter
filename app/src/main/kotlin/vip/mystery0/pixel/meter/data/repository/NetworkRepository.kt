@@ -1,5 +1,6 @@
 package vip.mystery0.pixel.meter.data.repository
 
+import android.util.Log
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -95,6 +96,7 @@ class NetworkRepository(
     }
 
     fun startMonitoring() {
+        Log.i(TAG, "request start monitoring")
         if (monitoringJob?.isActive == true) return
 
         // Reset state
@@ -105,6 +107,7 @@ class NetworkRepository(
         _isMonitoring.value = true
 
         monitoringJob = scope.launch {
+            Log.i(TAG, "startMonitoring")
             while (isActive) {
                 val startTime = System.currentTimeMillis()
                 val source = dataSource
@@ -147,10 +150,12 @@ class NetworkRepository(
                 val delayMills = interval - (System.currentTimeMillis() - startTime)
                 delay(delayMills.coerceAtLeast(0))
             }
+            Log.i(TAG, "stopMonitoring")
         }
     }
 
     fun stopMonitoring() {
+        Log.i(TAG, "request stop monitoring")
         monitoringJob?.cancel()
         monitoringJob = null
         _isMonitoring.value = false
@@ -158,6 +163,8 @@ class NetworkRepository(
     }
 
     companion object {
+        private const val TAG = "NetworkRepository"
+
         fun formatSpeedTextForLiveUpdate(bytes: Long): String {
             if (bytes < 1024) return "${bytes}B/s"
             val kb = bytes / 1024.0
