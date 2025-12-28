@@ -9,7 +9,7 @@
     动态取色。
     - **架构**: MVVM (ViewModel + StateFlow + Repository)。
     - **依赖注入**: 使用 **Koin** (Koin-Android, Koin-Compose)。
-    - **兼容性**: MinSDK 为 36 (Android 16)，TargetSDK 为 Latest (36)。
+    - **兼容性**: MinSDK 为 31 (Android 12)，TargetSDK 为 Latest (36)。
 - **功能特性规范**:
   - **单一数据源**:
     - 使用 `TrafficStats` 配合 `ConnectivityManager`。
@@ -66,7 +66,7 @@
     - 核心目标: Google Pixel 系列 (Android 10+)。
     - 兼容目标: 运行原生/类原生 Android (AOSP) 的设备。
 - **SDK 版本**:
-  - **MinSDK**: 36 (Android 16)。
+  - **MinSDK**: 31 (Android 12)。
   - **CompileSDK/TargetSDK**: 36 (Android 16)。
 - **关键技术决策**:
     - **DI**: Koin (轻量级，适合本工具)。

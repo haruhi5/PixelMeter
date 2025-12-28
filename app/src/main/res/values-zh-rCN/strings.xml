@@ -19,7 +19,7 @@
     <string name="config_enable_notification">启用通知</string>
     <string name="config_enable_notification_desc">在通知栏显示网速</string>
     <string name="config_enable_live_update">启用实时更新</string>
-    <string name="config_enable_live_update_desc">使用实时网速更新通知栏</string>
+    <string name="config_enable_live_update_desc">使用实时网速更新通知栏 (需要 Android 16+ 版本)</string>
 
     <string name="title_tools">工具箱</string>
     <string name="action_speed_test">网络测速</string>

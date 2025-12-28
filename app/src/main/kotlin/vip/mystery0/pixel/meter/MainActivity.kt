@@ -2,6 +2,7 @@ package vip.mystery0.pixel.meter
 
 import android.Manifest
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import androidx.activity.ComponentActivity
@@ -156,7 +157,17 @@ class MainActivity : ComponentActivity() {
                                     Button(onClick = {
                                         serviceError?.let { (_, action) ->
                                             if (action == Settings.ACTION_APP_NOTIFICATION_SETTINGS) {
-                                                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                                    notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                                                } else {
+                                                    val intent = Intent(action)
+                                                    intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                                                    intent.putExtra(
+                                                        Settings.EXTRA_APP_PACKAGE,
+                                                        context.packageName
+                                                    )
+                                                    context.startActivity(intent)
+                                                }
                                             } else {
                                                 val intent = Intent(action)
                                                 intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
@@ -276,11 +287,13 @@ class MainActivity : ComponentActivity() {
 
                 if (isNotificationEnabled) {
                     item {
+                        val isSupported = Build.VERSION.SDK_INT >= Build.VERSION_CODES.BAKLAVA
                         ConfigRow(
                             title = stringResource(R.string.config_enable_live_update),
                             subtitle = stringResource(R.string.config_enable_live_update_desc),
-                            checked = isLiveUpdateEnabled,
-                            onCheckedChange = { viewModel.setLiveUpdateEnabled(it) }
+                            checked = isLiveUpdateEnabled && isSupported,
+                            onCheckedChange = { viewModel.setLiveUpdateEnabled(it) },
+                            enabled = isSupported
                         )
                     }
                 }
@@ -387,7 +400,8 @@ fun ConfigRow(
     title: String,
     subtitle: String,
     checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit
+    onCheckedChange: (Boolean) -> Unit,
+    enabled: Boolean = true
 ) {
     Row(
         modifier = Modifier
@@ -404,7 +418,11 @@ fun ConfigRow(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
-        Switch(checked = checked, onCheckedChange = onCheckedChange)
+        Switch(
+            checked = checked,
+            onCheckedChange = onCheckedChange,
+            enabled = enabled
+        )
     }
 }
 

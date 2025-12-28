@@ -46,7 +46,7 @@ Kernel 数据剔除虚拟接口流量，还原真实网速。
 
 ## 3. 技术规格 (Technical Requirements)
 
-* **Min SDK**: 36 (Android 16)
+* **Min SDK**: 31 (Android 12)
 * **Target SDK**: 36 (Android 16)
 * **架构**: MVVM + Clean Architecture (Simplified)
 * **语言**: Kotlin

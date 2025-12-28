@@ -120,7 +120,7 @@ class NotificationHelper(private val context: Context) {
                     }"
                 )
                 .setSmallIcon(R.drawable.ic_speed)
-                .setShortCriticalText(statusText) // No version check needed as minSdk = 36
+                .setShortCriticalText(statusText)
                 .setRequestPromotedOngoing(true)
         } else {
             // Standard Mode
