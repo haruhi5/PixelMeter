@@ -14,18 +14,18 @@
     <string name="title_feature_config">功能配置</string>
     <string name="config_enable_overlay">启用悬浮窗</string>
     <string name="config_enable_overlay_desc">显示桌面悬浮窗</string>
-    <string name="config_lock_overlay">锁定悬浮窗</string>
-    <string name="config_lock_overlay_desc">防止悬浮窗被移动</string>
     <string name="config_enable_notification">启用通知</string>
     <string name="config_enable_notification_desc">在通知栏显示网速</string>
-    <string name="config_enable_live_update">启用实时更新</string>
-    <string name="config_enable_live_update_desc">使用实时网速更新通知栏 (需要 Android 16+ 版本)</string>
 
     <string name="title_tools">工具箱</string>
     <string name="action_speed_test">网络测速</string>
     <string name="desc_speed_test">使用 Cloudflare 进行测速</string>
 
     <string name="title_settings">设置</string>
+    <string name="config_lock_overlay">锁定悬浮窗</string>
+    <string name="config_lock_overlay_desc">防止悬浮窗被移动</string>
+    <string name="config_enable_live_update">启用实时更新</string>
+    <string name="config_enable_live_update_desc">使用实时网速更新通知栏 (需要 Android 16+ 版本)</string>
 
     <string name="error_unknown">未知错误</string>
     <string name="error_notification_permission">启用通知需要授予“通知权限”</string>

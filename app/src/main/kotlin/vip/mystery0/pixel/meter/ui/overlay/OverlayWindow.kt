@@ -20,6 +20,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.unit.dp
@@ -99,6 +100,7 @@ class OverlayWindow(
                 PixelPulseTheme {
                     val isLocked by repository.isOverlayLocked.collectAsState()
                     val bgColor by repository.overlayBgColor.collectAsState()
+                    val textColor by repository.overlayTextColor.collectAsState()
                     val cornerRadius by repository.overlayCornerRadius.collectAsState()
                     val textSize by repository.overlayTextSize.collectAsState()
                     val textUp by repository.overlayTextUp.collectAsState()
@@ -108,6 +110,7 @@ class OverlayWindow(
                     OverlayContent(
                         speed = speedState,
                         bgColor = bgColor,
+                        textColor = textColor,
                         cornerRadius = cornerRadius,
                         textSize = textSize,
                         textUp = textUp,
@@ -157,6 +160,7 @@ class OverlayWindow(
 fun OverlayContent(
     speed: NetSpeedData,
     bgColor: Int,
+    textColor: Int,
     cornerRadius: Int,
     textSize: Float,
     textUp: String,
@@ -167,7 +171,7 @@ fun OverlayContent(
 ) {
     Surface(
         shape = RoundedCornerShape(cornerRadius.dp),
-        color = androidx.compose.ui.graphics.Color(bgColor),
+        color = Color(bgColor),
         modifier = Modifier.pointerInput(Unit) {
             detectDragGestures(
                 onDrag = { change, dragAmount ->
@@ -188,13 +192,13 @@ fun OverlayContent(
             Text(
                 text = if (upFirst) upText else downText,
                 style = MaterialTheme.typography.labelSmall.copy(fontSize = textSize.sp),
-                color = androidx.compose.ui.graphics.Color.White // Always white for contrast on dark/transparent overlay
+                color = Color(textColor)
             )
             Box(modifier = Modifier.padding(horizontal = 4.dp))
             Text(
                 text = if (upFirst) downText else upText,
                 style = MaterialTheme.typography.labelSmall.copy(fontSize = textSize.sp),
-                color = androidx.compose.ui.graphics.Color.White
+                color = Color(textColor)
             )
         }
     }

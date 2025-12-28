@@ -6,35 +6,29 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.layout.windowInsetsBottomHeight
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.BasicAlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Slider
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -43,15 +37,30 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.github.skydoves.colorpicker.compose.AlphaSlider
+import com.github.skydoves.colorpicker.compose.AlphaTile
+import com.github.skydoves.colorpicker.compose.HsvColorPicker
+import com.github.skydoves.colorpicker.compose.rememberColorPickerController
+import me.zhanghai.compose.preference.ListPreference
+import me.zhanghai.compose.preference.LocalPreferenceTheme
+import me.zhanghai.compose.preference.Preference
+import me.zhanghai.compose.preference.PreferenceCategory
+import me.zhanghai.compose.preference.ProvidePreferenceLocals
+import me.zhanghai.compose.preference.SliderPreference
+import me.zhanghai.compose.preference.SwitchPreference
+import me.zhanghai.compose.preference.TextFieldPreference
+import me.zhanghai.compose.preference.TwoTargetPreference
 import vip.mystery0.pixel.meter.BuildConfig
+import vip.mystery0.pixel.meter.R
 import vip.mystery0.pixel.meter.ui.theme.PixelPulseTheme
+import java.util.Locale
 
 class SettingsActivity : ComponentActivity() {
     private val viewModel by viewModels<SettingsViewModel>()
@@ -81,19 +90,20 @@ class SettingsActivity : ComponentActivity() {
             },
             contentWindowInsets = WindowInsets(0, 0, 0, 0)
         ) { paddingValues ->
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues)
-                    .verticalScroll(rememberScrollState())
-            ) {
-                GeneralSection(viewModel)
-                HorizontalDivider()
-                OverlaySection(viewModel)
-                HorizontalDivider()
-                NotificationSection(viewModel)
-                HorizontalDivider()
-                AboutSection()
+            ProvidePreferenceLocals {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues)
+                ) {
+                    item { GeneralSection(viewModel) }
+                    item { OverlaySection(viewModel) }
+                    item { NotificationSection(viewModel) }
+                    item { AboutSection() }
+                    item {
+                        Spacer(modifier = Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
+                    }
+                }
             }
         }
     }
@@ -103,27 +113,21 @@ class SettingsActivity : ComponentActivity() {
 fun GeneralSection(viewModel: SettingsViewModel) {
     val interval by viewModel.samplingInterval.collectAsState(initial = 1500L)
 
-    SectionHeader(title = "General")
+    var intervalSlider by remember { mutableFloatStateOf(interval.toFloat()) }
 
-    ListItem(
-        headlineContent = { Text("Sampling Interval") },
-        supportingContent = {
-            Text("${interval}ms\nLower values update faster but use more battery. Higher values save battery but update slower.")
-        },
-        trailingContent = {
-            // Simple slider dialog or similar could go here, for now just a basic implementation inline or separate
-        }
+    PreferenceCategory(title = { Text("General") })
+
+    SliderPreference(
+        value = interval.toFloat(),
+        onValueChange = { viewModel.setSamplingInterval(it.toLong()) },
+        sliderValue = intervalSlider,
+        onSliderValueChange = { intervalSlider = it },
+        valueRange = 1000f..5000f,
+        valueSteps = 39,
+        title = { Text("数据采样间隔时间") },
+        summary = { Text("过低的间隔时间会导致结果准确度降低，过高的间隔时间结果更准确，但是更新的很慢") },
+        valueText = { Text("${intervalSlider.toLong()}ms") }
     )
-
-    // Slider for Sampling Interval
-    Column(modifier = Modifier.padding(horizontal = 16.dp)) {
-        Slider(
-            value = interval.toFloat(),
-            onValueChange = { viewModel.setSamplingInterval(it.toLong()) },
-            valueRange = 1000f..5000f,
-            steps = 39 // (5000-1000)/100 = 40 steps -> 40 intervals -> 39 steps param
-        )
-    }
 }
 
 @Composable
@@ -131,76 +135,75 @@ fun OverlaySection(viewModel: SettingsViewModel) {
     val isEnabled by viewModel.isOverlayEnabled.collectAsState(initial = false)
     val isLocked by viewModel.isOverlayLocked.collectAsState(initial = false)
     val bgColor by viewModel.overlayBgColor.collectAsState(initial = 0)
+    val textColor by viewModel.overlayTextColor.collectAsState(initial = 0)
     val cornerRadius by viewModel.overlayCornerRadius.collectAsState(initial = 8)
     val textSize by viewModel.overlayTextSize.collectAsState(initial = 10f)
     val textUp by viewModel.overlayTextUp.collectAsState(initial = "▲ ")
     val textDown by viewModel.overlayTextDown.collectAsState(initial = "▼ ")
     val upFirst by viewModel.overlayOrderUpFirst.collectAsState(initial = true)
 
-    SectionHeader(title = "Overlay")
-
-    ListItem(
-        headlineContent = { Text("Enable Overlay") },
-        trailingContent = {
-            Switch(checked = isEnabled, onCheckedChange = { viewModel.setOverlayEnabled(it) })
-        }
+    PreferenceCategory(title = { Text("Overlay") })
+    SwitchPreference(
+        value = isEnabled,
+        onValueChange = { viewModel.setOverlayEnabled(it) },
+        title = { Text("Enable Overlay") }
     )
 
     if (isEnabled) {
-        ListItem(
-            headlineContent = { Text("Lock Position") },
-            trailingContent = {
-                Switch(checked = isLocked, onCheckedChange = { viewModel.setOverlayLocked(it) })
-            }
+        SwitchPreference(
+            value = isLocked,
+            onValueChange = { viewModel.setOverlayLocked(it) },
+            title = { Text(stringResource(R.string.config_lock_overlay)) },
+            summary = { Text(stringResource(R.string.config_lock_overlay_desc)) }
         )
-
-        // Background Color Picker (Simplified)
-        ColorPickerItem(
+        ColorPreference(
             title = "Background Color",
-            currentColor = Color(bgColor),
+            color = Color(bgColor),
             onColorSelected = { viewModel.setOverlayBgColor(it.toArgb()) }
         )
-
-        // Corner Radius
-        ListItem(
-            headlineContent = { Text("Corner Radius: $cornerRadius dp") }
+        ColorPreference(
+            title = "Text Color",
+            color = Color(textColor),
+            onColorSelected = { viewModel.setOverlayTextColor(it.toArgb()) }
         )
-        Slider(
+        SliderPreference(
             value = cornerRadius.toFloat(),
             onValueChange = { viewModel.setOverlayCornerRadius(it.toInt()) },
+            sliderValue = cornerRadius.toFloat(),
+            onSliderValueChange = { viewModel.setOverlayCornerRadius(it.toInt()) },
             valueRange = 0f..32f,
-            modifier = Modifier.padding(horizontal = 16.dp)
+            valueSteps = 32,
+            title = { Text("圆角大小") },
+            valueText = { Text("${cornerRadius.toInt()}dp") }
         )
-
-        // Text Size
-        ListItem(
-            headlineContent = { Text("Text Size: ${String.format("%.1f", textSize)} sp") }
-        )
-        Slider(
+        SliderPreference(
             value = textSize,
             onValueChange = { viewModel.setOverlayTextSize(it) },
+            sliderValue = textSize,
+            onSliderValueChange = { viewModel.setOverlayTextSize(it) },
             valueRange = 8f..24f,
-            modifier = Modifier.padding(horizontal = 16.dp)
+            title = { Text("文字大小") },
+            valueText = { Text("${"%.1f".format(Locale.getDefault(), textSize)}sp") }
         )
-
-        // Text Customization
-        TextInputItem(
-            title = "Up Prefix",
+        TextFieldPreference(
             value = textUp,
-            onValueChange = { viewModel.setOverlayTextUp(it) })
-        TextInputItem(
-            title = "Down Prefix",
+            onValueChange = { viewModel.setOverlayTextUp(it) },
+            textToValue = { it },
+            title = { Text("上行文本前缀") },
+            summary = { Text("显示上行流量的文本前缀，当前值为：${textUp}") },
+        )
+        TextFieldPreference(
             value = textDown,
-            onValueChange = { viewModel.setOverlayTextDown(it) })
-
-        ListItem(
-            headlineContent = { Text("Show Up First") },
-            supportingContent = { Text("Toggle order of up/down speed") },
-            trailingContent = {
-                Switch(
-                    checked = upFirst,
-                    onCheckedChange = { viewModel.setOverlayOrderUpFirst(it) })
-            }
+            onValueChange = { viewModel.setOverlayTextDown(it) },
+            textToValue = { it },
+            title = { Text("下行文本前缀") },
+            summary = { Text("显示下行流量的文本前缀，当前值为：${textDown}") },
+        )
+        SwitchPreference(
+            value = upFirst,
+            onValueChange = { viewModel.setOverlayOrderUpFirst(it) },
+            title = { Text("优先显示上行") },
+            summary = { Text(if (upFirst) "上行流量显示在前面" else "下行流量显示在前面") }
         )
     }
 }
@@ -208,55 +211,65 @@ fun OverlaySection(viewModel: SettingsViewModel) {
 @Composable
 fun NotificationSection(viewModel: SettingsViewModel) {
     val isEnabled by viewModel.isNotificationEnabled.collectAsState(initial = true)
-    val textUp by viewModel.notificationTextUp.collectAsState(initial = "TX ")
-    val textDown by viewModel.notificationTextDown.collectAsState(initial = "RX ")
+    val isLiveUpdateEnabled by viewModel.isLiveUpdateEnabled.collectAsState(initial = false)
+    val textUp by viewModel.notificationTextUp.collectAsState(initial = "▲ ")
+    val textDown by viewModel.notificationTextDown.collectAsState(initial = "▼ ")
     val upFirst by viewModel.notificationOrderUpFirst.collectAsState(initial = true)
     val displayMode by viewModel.notificationDisplayMode.collectAsState(initial = 0)
 
-    SectionHeader(title = "Notification")
-
-    ListItem(
-        headlineContent = { Text("Enable Notification") },
-        trailingContent = {
-            Switch(checked = isEnabled, onCheckedChange = { viewModel.setNotificationEnabled(it) })
-        }
+    PreferenceCategory(title = { Text("Notification") })
+    SwitchPreference(
+        value = isEnabled,
+        onValueChange = { viewModel.setNotificationEnabled(it) },
+        title = { Text("Enable Notification") }
     )
 
     if (isEnabled) {
-        TextInputItem(
-            title = "Up Prefix",
+        SwitchPreference(
+            value = isLiveUpdateEnabled,
+            onValueChange = { viewModel.setLiveUpdateEnabled(it) },
+            title = { Text(stringResource(R.string.config_enable_live_update)) },
+            summary = { Text(stringResource(R.string.config_enable_live_update_desc)) }
+        )
+        TextFieldPreference(
             value = textUp,
-            onValueChange = { viewModel.setNotificationTextUp(it) })
-        TextInputItem(
-            title = "Down Prefix",
+            onValueChange = { viewModel.setNotificationTextUp(it) },
+            textToValue = { it },
+            title = { Text("上行文本前缀") },
+            summary = { Text("显示上行流量的文本前缀，当前值为：${textUp}") },
+        )
+        TextFieldPreference(
             value = textDown,
-            onValueChange = { viewModel.setNotificationTextDown(it) })
-
-        ListItem(
-            headlineContent = { Text("Show Up First") },
-            trailingContent = {
-                Switch(
-                    checked = upFirst,
-                    onCheckedChange = { viewModel.setNotificationOrderUpFirst(it) })
-            }
+            onValueChange = { viewModel.setNotificationTextDown(it) },
+            textToValue = { it },
+            title = { Text("下行文本前缀") },
+            summary = { Text("显示下行流量的文本前缀，当前值为：${textDown}") },
+        )
+        SwitchPreference(
+            value = upFirst,
+            onValueChange = { viewModel.setNotificationOrderUpFirst(it) },
+            title = { Text("优先显示上行") },
+            summary = { Text(if (upFirst) "上行流量显示在前面" else "下行流量显示在前面") }
         )
 
-        // Display Mode
-        // 0: Total, 1: Up Only, 2: Down Only
-        ListItem(
-            headlineContent = { Text("Display Content") },
-            supportingContent = {
-                val modeText = when (displayMode) {
-                    0 -> "Total"
-                    1 -> "Upload Only"
-                    2 -> "Download Only"
-                    else -> "Total"
+        val displayModeLabel = when (displayMode) {
+            1 -> "仅显示上行流量"
+            2 -> "仅显示下行流量"
+            else -> "显示总流量"
+        }
+        ListPreference(
+            value = displayModeLabel,
+            onValueChange = {
+                val mode = when (it) {
+                    "仅显示上行流量" -> 1
+                    "仅显示下行流量" -> 2
+                    else -> 0
                 }
-                Text(modeText)
+                viewModel.setNotificationDisplayMode(mode)
             },
-            modifier = Modifier.clickable {
-                viewModel.setNotificationDisplayMode((displayMode + 1) % 3)
-            }
+            title = { Text("Display Content") },
+            values = listOf("显示总流量", "仅显示上行流量", "仅显示下行流量"),
+            summary = { Text(displayModeLabel) }
         )
     }
 }
@@ -264,126 +277,93 @@ fun NotificationSection(viewModel: SettingsViewModel) {
 @Composable
 fun AboutSection() {
     val uriHandler = LocalUriHandler.current
-    SectionHeader(title = "About")
-
-    ListItem(
-        headlineContent = { Text("Version") },
-        supportingContent = { Text(BuildConfig.VERSION_NAME) }
+    PreferenceCategory(title = { Text("About") })
+    Preference(
+        title = { Text("App Version") },
+        summary = { Text(BuildConfig.VERSION_NAME) }
     )
-
-    ListItem(
-        headlineContent = { Text("GitHub") },
-        supportingContent = { Text("https://github.com/Mystery00/PixelMeter") },
-        modifier = Modifier.clickable {
-            uriHandler.openUri("https://github.com/Mystery00/PixelMeter")
-        }
+    Preference(
+        title = { Text("GitHub") },
+        summary = { Text("https://github.com/Mystery00/PixelMeter") },
+        onClick = { uriHandler.openUri("https://github.com/Mystery00/PixelMeter") }
     )
 }
 
 @Composable
-fun SectionHeader(title: String) {
-    Text(
-        text = title,
-        style = MaterialTheme.typography.titleMedium,
-        color = MaterialTheme.colorScheme.primary,
-        modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 8.dp)
-    )
-}
-
-@Composable
-fun TextInputItem(title: String, value: String, onValueChange: (String) -> Unit) {
+fun ColorPreference(
+    title: String,
+    color: Color,
+    onColorSelected: (Color) -> Unit
+) {
     var showDialog by remember { mutableStateOf(false) }
 
-    ListItem(
-        headlineContent = { Text(title) },
-        supportingContent = { Text(value.ifEmpty { "(Empty)" }) },
-        modifier = Modifier.clickable { showDialog = true }
-    )
+    val theme = LocalPreferenceTheme.current
 
-    if (showDialog) {
-        var text by remember { mutableStateOf(value) }
-        BasicAlertDialog(
-            onDismissRequest = { showDialog = false },
-        ) {
-            Card {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(text = "Edit $title", style = MaterialTheme.typography.titleLarge)
-                    Spacer(modifier = Modifier.height(8.dp))
-                    OutlinedTextField(
-                        value = text,
-                        onValueChange = { text = it },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Row(modifier = Modifier.align(Alignment.End)) {
-                        Button(onClick = { showDialog = false }) { Text("Cancel") }
-                        Spacer(modifier = Modifier.size(8.dp))
-                        Button(onClick = {
-                            onValueChange(text)
-                            showDialog = false
-                        }) { Text("OK") }
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun ColorPickerItem(title: String, currentColor: Color, onColorSelected: (Color) -> Unit) {
-    var showDialog by remember { mutableStateOf(false) }
-
-    ListItem(
-        headlineContent = { Text(title) },
-        trailingContent = {
+    TwoTargetPreference(
+        title = { Text(title) },
+        secondTarget = {
             Box(
                 modifier = Modifier
+                    .padding(horizontal = theme.horizontalSpacing)
                     .size(32.dp)
                     .clip(CircleShape)
-                    .background(currentColor)
-                    .clickable { showDialog = true }
+                    .background(color)
             )
-        }
+        },
+        onClick = { showDialog = true }
     )
-
     if (showDialog) {
-        // Very basic color picker dialog (Predefined colors + Alpha)
-        val colors = listOf(
-            Color.Black, Color.DarkGray, Color.Gray,
-            Color.Red, Color.Blue, Color.Green,
-            Color.Transparent
-        )
+        val controller = rememberColorPickerController()
+        var selectedColor by remember { mutableStateOf(color) }
 
-        BasicAlertDialog(onDismissRequest = { showDialog = false }) {
-            Card {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text("Select Color")
-                    Spacer(modifier = Modifier.height(8.dp))
-                    // Alpha Slider
-                    var alpha by remember { mutableFloatStateOf(currentColor.alpha) }
-                    Text("Alpha: ${(alpha * 100).toInt()}%")
-                    Slider(value = alpha, onValueChange = { alpha = it })
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    // Simple grid for example
-                    Row {
-                        colors.forEach { color ->
-                            Box(
-                                modifier = Modifier
-                                    .size(40.dp)
-                                    .padding(4.dp)
-                                    .clip(CircleShape)
-                                    .background(color)
-                                    .clickable {
-                                        onColorSelected(color.copy(alpha = alpha))
-                                        showDialog = false
-                                    }
-                            )
+        AlertDialog(
+            onDismissRequest = { showDialog = false },
+            title = { Text("选择颜色") },
+            text = {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                ) {
+                    HsvColorPicker(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(200.dp),
+                        controller = controller,
+                        initialColor = color,
+                        onColorChanged = { envelope ->
+                            selectedColor = envelope.color
                         }
-                    }
+                    )
+                    AlphaSlider(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(36.dp),
+                        controller = controller,
+                    )
+                    AlphaTile(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(36.dp)
+                            .clip(MaterialTheme.shapes.medium),
+                        controller = controller
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    onColorSelected(selectedColor)
+                    showDialog = false
+                }) {
+                    Text(stringResource(android.R.string.ok))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    showDialog = false
+                }) {
+                    Text(stringResource(android.R.string.cancel))
                 }
             }
-        }
+        )
     }
 }

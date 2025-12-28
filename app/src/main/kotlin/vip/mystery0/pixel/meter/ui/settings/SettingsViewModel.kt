@@ -11,6 +11,7 @@ class SettingsViewModel : ViewModel(), KoinComponent {
     // Overlay Settings
     val isOverlayEnabled = repository.isOverlayEnabled
     val overlayBgColor = repository.overlayBgColor
+    val overlayTextColor = repository.overlayTextColor
     val overlayCornerRadius = repository.overlayCornerRadius
     val overlayTextSize = repository.overlayTextSize
     val overlayTextUp = repository.overlayTextUp
@@ -20,6 +21,7 @@ class SettingsViewModel : ViewModel(), KoinComponent {
 
     // Notification Settings
     val isNotificationEnabled = repository.isNotificationEnabled
+    val isLiveUpdateEnabled = repository.isLiveUpdateEnabled
     val notificationTextUp = repository.notificationTextUp
     val notificationTextDown = repository.notificationTextDown
     val notificationOrderUpFirst = repository.notificationOrderUpFirst
@@ -33,6 +35,7 @@ class SettingsViewModel : ViewModel(), KoinComponent {
 
     fun setSamplingInterval(interval: Long) = repository.setSamplingInterval(interval)
     fun setOverlayBgColor(color: Int) = repository.setOverlayBgColor(color)
+    fun setOverlayTextColor(color: Int) = repository.setOverlayTextColor(color)
     fun setOverlayCornerRadius(radius: Int) = repository.setOverlayCornerRadius(radius)
     fun setOverlayTextSize(size: Float) = repository.setOverlayTextSize(size)
     fun setOverlayTextUp(text: String) = repository.setOverlayTextUp(text)
@@ -40,6 +43,7 @@ class SettingsViewModel : ViewModel(), KoinComponent {
     fun setOverlayOrderUpFirst(upFirst: Boolean) = repository.setOverlayOrderUpFirst(upFirst)
 
     fun setNotificationEnabled(enabled: Boolean) = repository.setNotificationEnabled(enabled)
+    fun setLiveUpdateEnabled(enabled: Boolean) = repository.setLiveUpdateEnabled(enabled)
     fun setNotificationTextUp(text: String) = repository.setNotificationTextUp(text)
     fun setNotificationTextDown(text: String) = repository.setNotificationTextDown(text)
     fun setNotificationOrderUpFirst(upFirst: Boolean) =

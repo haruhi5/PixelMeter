@@ -29,6 +29,7 @@ class DataStoreRepository(private val dataStore: DataStore<Preferences>) {
 
         val KEY_SAMPLING_INTERVAL = longPreferencesKey("key_sampling_interval")
         val KEY_OVERLAY_BG_COLOR = intPreferencesKey("key_overlay_bg_color")
+        val KEY_OVERLAY_TEXT_COLOR = intPreferencesKey("key_overlay_text_color")
         val KEY_OVERLAY_CORNER_RADIUS = intPreferencesKey("key_overlay_corner_radius")
         val KEY_OVERLAY_TEXT_SIZE = floatPreferencesKey("key_overlay_text_size")
         val KEY_OVERLAY_TEXT_UP = stringPreferencesKey("key_overlay_text_up")
@@ -81,6 +82,12 @@ class DataStoreRepository(private val dataStore: DataStore<Preferences>) {
         .map { preferences ->
             preferences[KEY_OVERLAY_BG_COLOR]
                 ?: 0xCC000000.toInt() // Default semi-transparent black
+        }
+
+    val overlayTextColor: Flow<Int> = dataStore.data
+        .map { preferences ->
+            preferences[KEY_OVERLAY_TEXT_COLOR]
+                ?: 0xFFFFFFFF.toInt() // Default white
         }
 
     val overlayCornerRadius: Flow<Int> = dataStore.data
@@ -168,6 +175,12 @@ class DataStoreRepository(private val dataStore: DataStore<Preferences>) {
     suspend fun setOverlayBgColor(color: Int) {
         dataStore.edit { preferences ->
             preferences[KEY_OVERLAY_BG_COLOR] = color
+        }
+    }
+
+    suspend fun setOverlayTextColor(color: Int) {
+        dataStore.edit { preferences ->
+            preferences[KEY_OVERLAY_TEXT_COLOR] = color
         }
     }
 

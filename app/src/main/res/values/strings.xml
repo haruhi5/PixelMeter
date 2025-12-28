@@ -15,18 +15,18 @@
     <string name="title_feature_config">Feature Configuration</string>
     <string name="config_enable_overlay">Enable Overlay</string>
     <string name="config_enable_overlay_desc">Show floating window</string>
-    <string name="config_lock_overlay">Lock Floating Window</string>
-    <string name="config_lock_overlay_desc">Prevent window from being moved</string>
     <string name="config_enable_notification">Enable Notification</string>
     <string name="config_enable_notification_desc">Show network speed in notification</string>
-    <string name="config_enable_live_update">Enable Live Update</string>
-    <string name="config_enable_live_update_desc">Use status bar chip (Requires Android 16+)</string>
 
     <string name="title_tools">Tools</string>
     <string name="action_speed_test">Speed Test</string>
     <string name="desc_speed_test">Run speed test via Cloudflare</string>
 
     <string name="title_settings">Settings</string>
+    <string name="config_lock_overlay">Lock Floating Window</string>
+    <string name="config_lock_overlay_desc">Prevent window from being moved</string>
+    <string name="config_enable_live_update">Enable Live Update</string>
+    <string name="config_enable_live_update_desc">Use status bar chip (Requires Android 16+)</string>
 
     <string name="error_unknown">Unknown error</string>
     <string name="error_notification_permission">Notification permission required</string>

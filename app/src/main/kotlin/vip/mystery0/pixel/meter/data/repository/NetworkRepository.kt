@@ -46,6 +46,9 @@ class NetworkRepository(
     private val _overlayBgColor = MutableStateFlow(0xCC000000.toInt())
     val overlayBgColor: StateFlow<Int> = _overlayBgColor.asStateFlow()
 
+    private val _overlayTextColor = MutableStateFlow(0xFFFFFFFF.toInt())
+    val overlayTextColor: StateFlow<Int> = _overlayTextColor.asStateFlow()
+
     private val _overlayCornerRadius = MutableStateFlow(8)
     val overlayCornerRadius: StateFlow<Int> = _overlayCornerRadius.asStateFlow()
 
@@ -88,6 +91,7 @@ class NetworkRepository(
             _isOverlayEnabled.value = dataStoreRepository.isOverlayEnabled.first()
             _samplingInterval.value = dataStoreRepository.samplingInterval.first()
             _overlayBgColor.value = dataStoreRepository.overlayBgColor.first()
+            _overlayTextColor.value = dataStoreRepository.overlayTextColor.first()
             _overlayCornerRadius.value = dataStoreRepository.overlayCornerRadius.first()
             _overlayTextSize.value = dataStoreRepository.overlayTextSize.first()
             _overlayTextUp.value = dataStoreRepository.overlayTextUp.first()
@@ -171,6 +175,10 @@ class NetworkRepository(
 
     fun setOverlayBgColor(color: Int) {
         scope.launch { dataStoreRepository.setOverlayBgColor(color) }
+    }
+
+    fun setOverlayTextColor(color: Int) {
+        scope.launch { dataStoreRepository.setOverlayTextColor(color) }
     }
 
     fun setOverlayCornerRadius(radius: Int) {
@@ -290,27 +298,27 @@ class NetworkRepository(
         fun formatSpeedTextForLiveUpdate(bytes: Long): String {
             if (bytes < 1024) return "${bytes}B/s"
             val kb = bytes / 1024.0
-            if (kb < 1000) return "${"%.0f".format(Locale.US, kb)}K/s"
+            if (kb < 1000) return "${"%.0f".format(Locale.getDefault(), kb)}K/s"
             val mb = kb / 1024.0
             if (mb < 1000) {
-                return if (mb < 100) "${"%.1f".format(Locale.US, mb)}M/s"
-                else "${"%.0f".format(Locale.US, mb)}M/s"
+                return if (mb < 100) "${"%.1f".format(Locale.getDefault(), mb)}M/s"
+                else "${"%.0f".format(Locale.getDefault(), mb)}M/s"
             }
             val gb = mb / 1024.0
-            return "${"%.1f".format(Locale.US, gb)}G/s"
+            return "${"%.1f".format(Locale.getDefault(), gb)}G/s"
         }
 
         fun formatSpeedText(bytes: Long): Pair<String, String> {
             if (bytes < 1024) return bytes.toString() to "B/s"
             val kb = bytes / 1024.0
-            if (kb < 1000) return "%.0f".format(Locale.US, kb) to "KB/s"
+            if (kb < 1000) return "%.0f".format(Locale.getDefault(), kb) to "KB/s"
             val mb = kb / 1024.0
             if (mb < 1000) {
-                return if (mb < 10) "%.1f".format(Locale.US, mb) to "MB/s"
-                else "%.0f".format(Locale.US, mb) to "MB/s"
+                return if (mb < 10) "%.1f".format(Locale.getDefault(), mb) to "MB/s"
+                else "%.0f".format(Locale.getDefault(), mb) to "MB/s"
             }
             val gb = mb / 1024.0
-            return "%.1f".format(Locale.US, gb) to "GB/s"
+            return "%.1f".format(Locale.getDefault(), gb) to "GB/s"
         }
 
         fun formatSpeedLine(bytes: Long): String {
