@@ -15,5 +15,5 @@ data class NetworkTrafficData(
 )
 
 interface ISpeedDataSource {
-    suspend fun getTrafficData(): NetworkTrafficData?
+    suspend fun getTrafficData(): NetworkTrafficData
 }

@@ -12,7 +12,7 @@ import vip.mystery0.pixel.meter.data.source.NetworkTrafficData
 class SpeedDataSource(
     private val connectivityManager: ConnectivityManager
 ) : ISpeedDataSource {
-    override suspend fun getTrafficData(): NetworkTrafficData? = withContext(Dispatchers.IO) {
+    override suspend fun getTrafficData(): NetworkTrafficData = withContext(Dispatchers.IO) {
         var totalRx = 0L
         var totalTx = 0L
 
@@ -60,7 +60,6 @@ class SpeedDataSource(
             }
         }
 
-        if (totalRx == 0L && totalTx == 0L) return@withContext null
         return@withContext NetworkTrafficData(totalRx, totalTx)
     }
 }

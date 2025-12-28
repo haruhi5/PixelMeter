@@ -117,34 +117,30 @@ class NetworkRepository(
                 // Get Traffic Data
                 val trafficData = source.getTrafficData()
 
-                if (trafficData != null) {
-                    val currentTime = System.currentTimeMillis()
-                    val totalRxBytes = trafficData.rxBytes
-                    val totalTxBytes = trafficData.txBytes
+                val currentTime = System.currentTimeMillis()
+                val totalRxBytes = trafficData.rxBytes
+                val totalTxBytes = trafficData.txBytes
 
-                    if (lastTime != 0L) {
-                        val timeDelta = currentTime - lastTime
-                        val rxDelta = totalRxBytes - lastTotalRxBytes
-                        val txDelta = totalTxBytes - lastTotalTxBytes
+                if (lastTime != 0L) {
+                    val timeDelta = currentTime - lastTime
+                    val rxDelta = totalRxBytes - lastTotalRxBytes
+                    val txDelta = totalTxBytes - lastTotalTxBytes
 
-                        if (timeDelta > 0) {
-                            // Calculate speed
-                            val downloadSpeed = ((rxDelta * 1000) / timeDelta).coerceAtLeast(0)
-                            val uploadSpeed = ((txDelta * 1000) / timeDelta).coerceAtLeast(0)
+                    if (timeDelta > 0) {
+                        // Calculate speed
+                        val downloadSpeed = ((rxDelta * 1000) / timeDelta).coerceAtLeast(0)
+                        val uploadSpeed = ((txDelta * 1000) / timeDelta).coerceAtLeast(0)
 
-                            if (downloadSpeed != 0L || uploadSpeed != 0L) {
-                                _netSpeed.value = NetSpeedData(
-                                    downloadSpeed.coerceAtLeast(0),
-                                    uploadSpeed.coerceAtLeast(0)
-                                )
-                            }
-                        }
+                        _netSpeed.value = NetSpeedData(
+                            downloadSpeed.coerceAtLeast(0),
+                            uploadSpeed.coerceAtLeast(0)
+                        )
                     }
-
-                    lastTotalRxBytes = totalRxBytes
-                    lastTotalTxBytes = totalTxBytes
-                    lastTime = currentTime
                 }
+
+                lastTotalRxBytes = totalRxBytes
+                lastTotalTxBytes = totalTxBytes
+                lastTime = currentTime
 
                 // Delay to achieve the desired interval
                 val delayMills = interval - (System.currentTimeMillis() - startTime)
