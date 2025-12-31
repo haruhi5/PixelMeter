@@ -309,7 +309,7 @@ fun OverlaySection(viewModel: SettingsViewModel) {
             valueRange = 0f..32f,
             valueSteps = 32,
             title = { Text(stringResource(R.string.settings_overlay_corner_radius)) },
-            valueText = { Text("${cornerRadius.toInt()}dp") }
+            valueText = { Text("${cornerRadius}dp") }
         )
         SliderPreference(
             value = 0F,
