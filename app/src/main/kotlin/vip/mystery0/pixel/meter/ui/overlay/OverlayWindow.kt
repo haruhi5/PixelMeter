@@ -106,9 +106,11 @@ class OverlayWindow(
                     val textUp by repository.overlayTextUp.collectAsState()
                     val textDown by repository.overlayTextDown.collectAsState()
                     val upFirst by repository.overlayOrderUpFirst.collectAsState()
+                    val isOverlayUseDefaultColors by repository.isOverlayUseDefaultColors.collectAsState()
 
                     OverlayContent(
                         speed = speedState,
+                        useDefaultColors = isOverlayUseDefaultColors,
                         bgColor = bgColor,
                         textColor = textColor,
                         cornerRadius = cornerRadius,
@@ -159,6 +161,7 @@ class OverlayWindow(
 @Composable
 fun OverlayContent(
     speed: NetSpeedData,
+    useDefaultColors: Boolean,
     bgColor: Int,
     textColor: Int,
     cornerRadius: Int,
@@ -171,7 +174,7 @@ fun OverlayContent(
 ) {
     Surface(
         shape = RoundedCornerShape(cornerRadius.dp),
-        color = Color(bgColor),
+        color = if (useDefaultColors) MaterialTheme.colorScheme.surface else Color(bgColor),
         modifier = Modifier.pointerInput(Unit) {
             detectDragGestures(
                 onDrag = { change, dragAmount ->
@@ -192,13 +195,17 @@ fun OverlayContent(
             Text(
                 text = if (upFirst) upText else downText,
                 style = MaterialTheme.typography.labelSmall.copy(fontSize = textSize.sp),
-                color = Color(textColor)
+                color = if (useDefaultColors) MaterialTheme.colorScheme.onSurface else Color(
+                    textColor
+                )
             )
             Box(modifier = Modifier.padding(horizontal = 4.dp))
             Text(
                 text = if (upFirst) downText else upText,
                 style = MaterialTheme.typography.labelSmall.copy(fontSize = textSize.sp),
-                color = Color(textColor)
+                color = if (useDefaultColors) MaterialTheme.colorScheme.onSurface else Color(
+                    textColor
+                )
             )
         }
     }

@@ -28,6 +28,7 @@ class MainViewModel(
 
     val isOverlayEnabled = repository.isOverlayEnabled
     val isNotificationEnabled = repository.isNotificationEnabled
+    val isHideFromRecents = repository.isHideFromRecents
 
     val isServiceRunning = repository.isMonitoring
 

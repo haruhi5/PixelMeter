@@ -8,6 +8,7 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.ServiceInfo
 import android.os.IBinder
+import android.provider.Settings
 import android.util.Log
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -26,8 +27,8 @@ class NetworkMonitorService : Service() {
     }
 
     private val repository: NetworkRepository by inject()
-    private val notificationHelper by lazy { NotificationHelper(this) }
-    private val notificationManager by lazy { getSystemService(NOTIFICATION_SERVICE) as NotificationManager }
+    private val notificationHelper: NotificationHelper by inject()
+    private val notificationManager: NotificationManager by inject()
     private val overlayWindow: OverlayWindow by inject()
 
     private var serviceJob: Job? = null
@@ -86,8 +87,16 @@ class NetworkMonitorService : Service() {
                 withContext(Dispatchers.Main) {
                     try {
                         if (repository.isOverlayEnabled.value) {
-                            overlayWindow.show()
-                            overlayWindow.update(speed)
+                            if (Settings.canDrawOverlays(this@NetworkMonitorService)) {
+                                overlayWindow.show()
+                                overlayWindow.update(speed)
+                            } else {
+                                Log.w(
+                                    TAG,
+                                    "overlay enabled but permission not granted, hiding overlay."
+                                )
+                                overlayWindow.hide()
+                            }
                         } else {
                             overlayWindow.hide()
                         }

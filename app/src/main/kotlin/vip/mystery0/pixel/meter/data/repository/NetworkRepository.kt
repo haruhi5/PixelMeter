@@ -82,6 +82,15 @@ class NetworkRepository(
     private val _notificationUnitSize = MutableStateFlow(0.35f)
     val notificationUnitSize: StateFlow<Float> = _notificationUnitSize.asStateFlow()
 
+    private val _isHideFromRecents = MutableStateFlow(false)
+    val isHideFromRecents: StateFlow<Boolean> = _isHideFromRecents.asStateFlow()
+
+    private val _isOverlayUseDefaultColors = MutableStateFlow(false)
+    val isOverlayUseDefaultColors: StateFlow<Boolean> = _isOverlayUseDefaultColors.asStateFlow()
+
+    private val _isAutoStartServiceEnabled = MutableStateFlow(false)
+    val isAutoStartServiceEnabled: StateFlow<Boolean> = _isAutoStartServiceEnabled.asStateFlow()
+
     private var monitoringJob: Job? = null
     private val scope = CoroutineScope(Dispatchers.Default)
 
@@ -109,6 +118,9 @@ class NetworkRepository(
             _notificationDisplayMode.value = dataStoreRepository.notificationDisplayMode.first()
             _notificationTextSize.value = dataStoreRepository.notificationTextSize.first()
             _notificationUnitSize.value = dataStoreRepository.notificationUnitSize.first()
+            _isHideFromRecents.value = dataStoreRepository.isHideFromRecents.first()
+            _isOverlayUseDefaultColors.value = dataStoreRepository.isOverlayUseDefaultColors.first()
+            _isAutoStartServiceEnabled.value = dataStoreRepository.isAutoStartServiceEnabled.first()
         }
         scope.launch {
             dataStoreRepository.isLiveUpdateEnabled.collect { _isLiveUpdateEnabled.value = it }
@@ -170,6 +182,21 @@ class NetworkRepository(
         scope.launch {
             dataStoreRepository.notificationUnitSize.collect {
                 _notificationUnitSize.value = it
+            }
+        }
+        scope.launch {
+            dataStoreRepository.isHideFromRecents.collect {
+                _isHideFromRecents.value = it
+            }
+        }
+        scope.launch {
+            dataStoreRepository.isOverlayUseDefaultColors.collect {
+                _isOverlayUseDefaultColors.value = it
+            }
+        }
+        scope.launch {
+            dataStoreRepository.isAutoStartServiceEnabled.collect {
+                _isAutoStartServiceEnabled.value = it
             }
         }
     }
@@ -244,6 +271,18 @@ class NetworkRepository(
 
     fun setNotificationUnitSize(size: Float) {
         scope.launch { dataStoreRepository.setNotificationUnitSize(size) }
+    }
+
+    fun setHideFromRecents(hide: Boolean) {
+        scope.launch { dataStoreRepository.setHideFromRecents(hide) }
+    }
+
+    fun setOverlayUseDefaultColors(useDefault: Boolean) {
+        scope.launch { dataStoreRepository.setOverlayUseDefaultColors(useDefault) }
+    }
+
+    fun setAutoStartServiceEnabled(enabled: Boolean) {
+        scope.launch { dataStoreRepository.setAutoStartServiceEnabled(enabled) }
     }
 
     suspend fun getOverlayPosition(): Pair<Int, Int> {

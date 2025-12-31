@@ -1,10 +1,13 @@
 package vip.mystery0.pixel.meter.ui.settings
 
+import android.content.Intent
 import android.os.Bundle
+import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
+import androidx.browser.customtabs.CustomTabsIntent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -31,6 +34,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -40,9 +44,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.core.net.toUri
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.github.skydoves.colorpicker.compose.AlphaSlider
 import com.github.skydoves.colorpicker.compose.AlphaTile
 import com.github.skydoves.colorpicker.compose.BrightnessSlider
@@ -77,6 +86,19 @@ class SettingsActivity : ComponentActivity() {
 
     @Composable
     fun SettingsScreen() {
+        val lifecycle = LocalLifecycleOwner.current.lifecycle
+        DisposableEffect(lifecycle) {
+            val observer = LifecycleEventObserver { _, event ->
+                if (event == Lifecycle.Event.ON_RESUME) {
+                    viewModel.refreshOverlaySettings()
+                }
+            }
+            lifecycle.addObserver(observer)
+            onDispose {
+                lifecycle.removeObserver(observer)
+            }
+        }
+
         Scaffold(
             topBar = {
                 TopAppBar(
@@ -97,8 +119,9 @@ class SettingsActivity : ComponentActivity() {
                         .padding(paddingValues)
                 ) {
                     item { GeneralSection(viewModel) }
-                    item { OverlaySection(viewModel) }
                     item { NotificationSection(viewModel) }
+                    item { OverlaySection(viewModel) }
+                    item { BackgroundSection(viewModel) }
                     item { AboutSection() }
                     item {
                         Spacer(modifier = Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
@@ -111,7 +134,12 @@ class SettingsActivity : ComponentActivity() {
 
 @Composable
 fun GeneralSection(viewModel: SettingsViewModel) {
+    val context = LocalContext.current
     val interval by viewModel.samplingInterval.collectAsState(initial = 1500L)
+    val isAutoStartEnabled by viewModel.isAutoStartServiceEnabled.collectAsState(initial = false)
+    val canEnableAutoStart by viewModel.canEnableAutoStart.collectAsState()
+    val hasOverlayPermission by viewModel.canOverlay.collectAsState()
+    val hasNotificationPermission by viewModel.hasNotificationPermission.collectAsState()
 
     PreferenceCategory(title = { Text(stringResource(R.string.settings_category_general)) })
 
@@ -120,18 +148,111 @@ fun GeneralSection(viewModel: SettingsViewModel) {
         onValueChange = { },
         sliderValue = interval.toFloat(),
         onSliderValueChange = { viewModel.setSamplingInterval(it.toLong()) },
-        valueRange = 1000f..5000f,
-        valueSteps = 39,
+        valueRange = 1000f..3000f,
+        valueSteps = 19,
         title = { Text(stringResource(R.string.settings_sampling_interval)) },
         summary = { Text(stringResource(R.string.settings_sampling_interval_desc)) },
         valueText = { Text("${interval}ms") }
+    )
+
+
+    val autoStartSummary = if (canEnableAutoStart) {
+        stringResource(R.string.settings_auto_start_service_desc)
+    } else {
+        stringResource(R.string.settings_auto_start_disabled_reason)
+    }
+
+    SwitchPreference(
+        value = isAutoStartEnabled,
+        onValueChange = { viewModel.setAutoStartServiceEnabled(it) },
+        enabled = canEnableAutoStart,
+        title = { Text(stringResource(R.string.settings_auto_start_service_title)) },
+        summary = { Text(autoStartSummary) }
+    )
+
+    // Permission Indicators
+    val overlayPermissionSummary = if (hasOverlayPermission) {
+        stringResource(R.string.settings_permission_granted)
+    } else {
+        stringResource(R.string.settings_permission_denied)
+    }
+    Preference(
+        title = { Text(stringResource(R.string.settings_permission_overlay)) },
+        summary = { Text(overlayPermissionSummary) },
+        onClick = {
+            val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION)
+            intent.data = "package:${context.packageName}".toUri()
+            context.startActivity(intent)
+        }
+    )
+
+    val notificationPermissionSummary = if (hasNotificationPermission) {
+        stringResource(R.string.settings_permission_granted)
+    } else {
+        stringResource(R.string.settings_permission_denied)
+    }
+    Preference(
+        title = { Text(stringResource(R.string.settings_permission_notification)) },
+        summary = { Text(notificationPermissionSummary) },
+        onClick = {
+            val intent = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+            intent.putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+            context.startActivity(intent)
+        }
+    )
+}
+
+@Composable
+fun BackgroundSection(viewModel: SettingsViewModel) {
+    val context = LocalContext.current
+    val isIgnoringBatteryOptimizations by viewModel.isIgnoringBatteryOptimizations.collectAsState()
+    val isHideFromRecents by viewModel.isHideFromRecents.collectAsState(initial = false)
+
+    PreferenceCategory(title = { Text(stringResource(R.string.settings_category_background)) })
+
+    Preference(
+        title = { Text(stringResource(R.string.settings_ignore_battery_optimizations_title)) },
+        summary = {
+            Text(
+                if (isIgnoringBatteryOptimizations) stringResource(R.string.settings_ignore_battery_optimizations_on)
+                else stringResource(R.string.settings_ignore_battery_optimizations_off)
+            )
+        },
+        onClick = {
+            val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS)
+            intent.data = "package:${context.packageName}".toUri()
+            context.startActivity(intent)
+        }
+    )
+
+    SwitchPreference(
+        value = isHideFromRecents,
+        onValueChange = { viewModel.setHideFromRecents(it) },
+        title = { Text(stringResource(R.string.settings_hide_from_recents_title)) },
+        summary = { Text(stringResource(R.string.settings_hide_from_recents_desc)) }
+    )
+
+    Preference(
+        title = { Text(stringResource(R.string.settings_dont_kill_my_app_title)) },
+        summary = { Text(stringResource(R.string.settings_dont_kill_my_app_desc)) },
+        onClick = {
+            val url = "https://dontkillmyapp.com/"
+            val customTabsIntent = CustomTabsIntent.Builder()
+                .setShowTitle(true)
+                .build()
+            customTabsIntent.launchUrl(context, url.toUri())
+        }
     )
 }
 
 @Composable
 fun OverlaySection(viewModel: SettingsViewModel) {
+    val isServiceRunning by viewModel.isServiceRunning.collectAsState()
+    val canOverlay by viewModel.canOverlay.collectAsState()
+
     val isEnabled by viewModel.isOverlayEnabled.collectAsState(initial = false)
     val isLocked by viewModel.isOverlayLocked.collectAsState(initial = false)
+    val isOverlayUseDefaultColors by viewModel.isOverlayUseDefaultColors.collectAsState(initial = false)
     val bgColor by viewModel.overlayBgColor.collectAsState(initial = 0)
     val textColor by viewModel.overlayTextColor.collectAsState(initial = 0)
     val cornerRadius by viewModel.overlayCornerRadius.collectAsState(initial = 8)
@@ -141,11 +262,18 @@ fun OverlaySection(viewModel: SettingsViewModel) {
     val upFirst by viewModel.overlayOrderUpFirst.collectAsState(initial = true)
 
     PreferenceCategory(title = { Text(stringResource(R.string.settings_category_overlay)) })
+    val isSwitchEnabled = !isServiceRunning || canOverlay
+    val summaryText = if (isSwitchEnabled) {
+        stringResource(R.string.config_enable_overlay_desc)
+    } else {
+        stringResource(R.string.config_overlay_disabled_reason)
+    }
     SwitchPreference(
         value = isEnabled,
         onValueChange = { viewModel.setOverlayEnabled(it) },
+        enabled = isSwitchEnabled,
         title = { Text(stringResource(R.string.config_enable_overlay)) },
-        summary = { Text(stringResource(R.string.config_enable_overlay_desc)) }
+        summary = { Text(summaryText) }
     )
 
     if (isEnabled) {
@@ -155,14 +283,22 @@ fun OverlaySection(viewModel: SettingsViewModel) {
             title = { Text(stringResource(R.string.settings_lock_overlay)) },
             summary = { Text(stringResource(R.string.config_lock_overlay_desc)) }
         )
+        SwitchPreference(
+            value = isOverlayUseDefaultColors,
+            onValueChange = { viewModel.setOverlayUseDefaultColors(it) },
+            title = { Text(stringResource(R.string.settings_overlay_use_default_colors)) },
+            summary = { Text(stringResource(R.string.settings_overlay_use_default_colors_desc)) }
+        )
         ColorPreference(
             title = stringResource(R.string.settings_overlay_bg_color),
             color = Color(bgColor),
+            enabled = !isOverlayUseDefaultColors,
             onColorSelected = { viewModel.setOverlayBgColor(it.toArgb()) }
         )
         ColorPreference(
             title = stringResource(R.string.settings_overlay_text_color),
             color = Color(textColor),
+            enabled = !isOverlayUseDefaultColors,
             onColorSelected = { viewModel.setOverlayTextColor(it.toArgb()) }
         )
         SliderPreference(
@@ -305,12 +441,6 @@ fun NotificationSection(viewModel: SettingsViewModel) {
     }
 }
 
-// Helper to get string inside Composable context where possible, or use Context
-@Composable
-fun getString(id: Int): String {
-    return stringResource(id)
-}
-
 @Composable
 fun AboutSection() {
     val uriHandler = LocalUriHandler.current
@@ -330,6 +460,7 @@ fun AboutSection() {
 fun ColorPreference(
     title: String,
     color: Color,
+    enabled: Boolean = true,
     onColorSelected: (Color) -> Unit
 ) {
     var showDialog by remember { mutableStateOf(false) }
@@ -338,6 +469,7 @@ fun ColorPreference(
 
     TwoTargetPreference(
         title = { Text(title) },
+        enabled = enabled,
         secondTarget = {
             Box(
                 modifier = Modifier
@@ -347,7 +479,7 @@ fun ColorPreference(
                     .background(color)
             )
         },
-        onClick = { showDialog = true }
+        onClick = { if (enabled) showDialog = true }
     )
     if (showDialog) {
         val controller = rememberColorPickerController()

@@ -42,6 +42,10 @@ class DataStoreRepository(private val dataStore: DataStore<Preferences>) {
         val KEY_NOTIFICATION_DISPLAY_MODE = intPreferencesKey("key_notification_display_mode")
         val KEY_NOTIFICATION_TEXT_SIZE = floatPreferencesKey("key_notification_text_size")
         val KEY_NOTIFICATION_UNIT_SIZE = floatPreferencesKey("key_notification_unit_size")
+
+        val KEY_HIDE_FROM_RECENTS = booleanPreferencesKey("key_hide_from_recents")
+        val KEY_OVERLAY_USE_DEFAULT_COLORS = booleanPreferencesKey("key_overlay_use_default_colors")
+        val KEY_AUTO_START_SERVICE = booleanPreferencesKey("key_auto_start_service")
     }
 
     val isLiveUpdateEnabled: Flow<Boolean> = dataStore.data
@@ -259,6 +263,39 @@ class DataStoreRepository(private val dataStore: DataStore<Preferences>) {
     suspend fun setNotificationUnitSize(size: Float) {
         dataStore.edit { preferences ->
             preferences[KEY_NOTIFICATION_UNIT_SIZE] = size
+        }
+    }
+
+    val isHideFromRecents: Flow<Boolean> = dataStore.data
+        .map { preferences ->
+            preferences[KEY_HIDE_FROM_RECENTS] ?: false
+        }
+
+    suspend fun setHideFromRecents(hide: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[KEY_HIDE_FROM_RECENTS] = hide
+        }
+    }
+
+    val isOverlayUseDefaultColors: Flow<Boolean> = dataStore.data
+        .map { preferences ->
+            preferences[KEY_OVERLAY_USE_DEFAULT_COLORS] ?: false
+        }
+
+    suspend fun setOverlayUseDefaultColors(useDefault: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[KEY_OVERLAY_USE_DEFAULT_COLORS] = useDefault
+        }
+    }
+
+    val isAutoStartServiceEnabled: Flow<Boolean> = dataStore.data
+        .map { preferences ->
+            preferences[KEY_AUTO_START_SERVICE] ?: false
+        }
+
+    suspend fun setAutoStartServiceEnabled(enabled: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[KEY_AUTO_START_SERVICE] = enabled
         }
     }
 }

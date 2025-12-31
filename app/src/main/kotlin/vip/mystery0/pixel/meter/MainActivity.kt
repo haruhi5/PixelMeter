@@ -1,6 +1,7 @@
 package vip.mystery0.pixel.meter
 
 import android.Manifest
+import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
@@ -39,6 +40,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -76,11 +78,22 @@ class MainActivity : ComponentActivity() {
 
     @Composable
     fun HomeScreen() {
+        val context = LocalContext.current
         val speed by viewModel.currentSpeed.collectAsState()
         val isServiceRunning by viewModel.isServiceRunning.collectAsState()
         val isOverlayEnabled by viewModel.isOverlayEnabled.collectAsState()
         val isNotificationEnabled by viewModel.isNotificationEnabled.collectAsState()
+        val isHideFromRecents by viewModel.isHideFromRecents.collectAsState(initial = false)
         val serviceError by viewModel.serviceStartError.collectAsState()
+
+        LaunchedEffect(isHideFromRecents) {
+            val activityManager =
+                context.getSystemService(Context.ACTIVITY_SERVICE) as android.app.ActivityManager
+            val tasks = activityManager.appTasks
+            if (tasks.isNotEmpty()) {
+                tasks[0].setExcludeFromRecents(isHideFromRecents)
+            }
+        }
 
         // Permission Launcher
         val notificationPermissionLauncher = rememberLauncherForActivityResult(
@@ -93,7 +106,6 @@ class MainActivity : ComponentActivity() {
         )
 
 
-        val context = LocalContext.current
 
         Scaffold(
             topBar = {
