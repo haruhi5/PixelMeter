@@ -27,6 +27,10 @@
     <string name="settings_category_general">General Settings</string>
     <string name="settings_sampling_interval">Sampling Interval</string>
     <string name="settings_sampling_interval_desc">Lower intervals reduce accuracy; higher intervals are more accurate but update slowly.</string>
+    <string name="settings_low_traffic_throttle_title">Idle Traffic Throttle</string>
+    <string name="settings_low_traffic_throttle_desc">Slow down updates when traffic stays near zero to save battery</string>
+    <string name="settings_battery_saver_mode_title">Battery Saver Mode</string>
+    <string name="settings_battery_saver_mode_desc">Reduce update frequency and skip minor speed changes to save battery</string>
     <string name="settings_auto_start_service_title">Auto-start Monitoring Service</string>
     <string name="settings_auto_start_service_desc">Start service automatically on boot</string>
     <string name="settings_auto_start_disabled_reason">Requires Overlay or Notification permission</string>
@@ -52,6 +56,8 @@
     <string name="settings_category_notification">Notification Settings</string>
     <string name="config_enable_live_update">Enable Live Update</string>
     <string name="config_enable_live_update_desc">Use status bar chip (Requires Android 16+)</string>
+    <string name="settings_hide_notification_drawer_title">Hide from Notification Drawer</string>
+    <string name="settings_hide_notification_drawer_desc">Keep icon in status bar but hide from notification drawer</string>
     <string name="settings_notification_display_mode">Display Content</string>
     <string name="settings_display_mode_total">Total Speed</string>
     <string name="settings_display_mode_upload">Upload Only</string>

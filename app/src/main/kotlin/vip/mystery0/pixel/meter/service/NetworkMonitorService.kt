@@ -14,8 +14,8 @@ import android.util.Log
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.withContext
 import org.koin.android.ext.android.inject
 import vip.mystery0.pixel.meter.data.repository.NetworkRepository
@@ -34,6 +34,7 @@ class NetworkMonitorService : Service() {
 
     private var serviceJob: Job? = null
     private val scope = CoroutineScope(Dispatchers.Default)
+    private var lastNotificationSignature: NotificationSignature? = null
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -81,7 +82,7 @@ class NetworkMonitorService : Service() {
         }
 
         startMonitoring()
-        return START_STICKY
+        return START_NOT_STICKY
     }
 
     private fun startMonitoring() {
@@ -91,6 +92,21 @@ class NetworkMonitorService : Service() {
         repository.startMonitoring()
 
         serviceJob = scope.launch {
+            // Monitor feature states to auto-stop service when not needed
+            launch {
+                combine(
+                    repository.isOverlayEnabled,
+                    repository.isNotificationEnabled
+                ) { overlayEnabled, notificationEnabled ->
+                    overlayEnabled to notificationEnabled
+                }.collect { (overlayEnabled, notificationEnabled) ->
+                    if (!overlayEnabled && !notificationEnabled) {
+                        Log.d(TAG, "Both overlay and notification disabled, stopping service")
+                        stopSelf()
+                    }
+                }
+            }
+
             repository.netSpeed.collect { speed ->
                 // Overlay logic
                 withContext(Dispatchers.Main) {
@@ -115,23 +131,48 @@ class NetworkMonitorService : Service() {
                 }
 
                 // Notification logic
-                val notification = withContext(Dispatchers.Default) {
-                    val isLiveUpdate = repository.isLiveUpdateEnabled.value
+                withContext(Dispatchers.Default) {
                     val isNotificationEnabled = repository.isNotificationEnabled.value
+                    if (!isNotificationEnabled) {
+                        // Reset signature so next enable rebuilds immediately
+                        lastNotificationSignature = null
+                        return@withContext
+                    }
+
+                    val isLiveUpdate = repository.isLiveUpdateEnabled.value
                     val textUp = repository.notificationTextUp.value
                     val textDown = repository.notificationTextDown.value
                     val upFirst = repository.notificationOrderUpFirst.value
                     val displayMode = repository.notificationDisplayMode.value
                     val textSize = repository.notificationTextSize.value
                     val unitSize = repository.notificationUnitSize.value
+                    val hideFromDrawer = repository.isHideNotificationDrawer.value
 
-                    notificationHelper.buildNotification(
-                        speed, isLiveUpdate, isNotificationEnabled,
-                        textUp, textDown, upFirst, displayMode,
-                        textSize, unitSize
+                    val signature = NotificationSignature(
+                        speed = speed,
+                        isLiveUpdate = isLiveUpdate,
+                        textUp = textUp,
+                        textDown = textDown,
+                        upFirst = upFirst,
+                        displayMode = displayMode,
+                        textSize = textSize,
+                        unitSize = unitSize,
+                        hideFromDrawer = hideFromDrawer
                     )
+
+                    if (signature != lastNotificationSignature) {
+                        val notification = notificationHelper.buildNotification(
+                            speed, isLiveUpdate, isNotificationEnabled,
+                            textUp, textDown, upFirst, displayMode,
+                            textSize, unitSize, hideFromDrawer
+                        )
+                        notificationManager.notify(
+                            NotificationHelper.NOTIFICATION_ID,
+                            notification
+                        )
+                        lastNotificationSignature = signature
+                    }
                 }
-                notificationManager.notify(NotificationHelper.NOTIFICATION_ID, notification)
             }
         }
     }
@@ -140,20 +181,17 @@ class NetworkMonitorService : Service() {
         override fun onReceive(context: Context, intent: Intent) {
             when (intent.action) {
                 Intent.ACTION_SCREEN_OFF -> {
-                    Log.d(TAG, "Screen OFF: Scheduling sleep in 2 minutes")
-                    stopMonitoringJob?.cancel()
-                    stopMonitoringJob = scope.launch {
-                        delay(2 * 60 * 1000L) // 2 minutes
-                        Log.d(TAG, "Screen OFF Timeout: Stopping monitoring to save power")
-                        repository.stopMonitoring()
+                    Log.d(TAG, "Screen OFF: stopping monitoring immediately to save power")
+                    repository.stopMonitoring()
+                    if (!repository.isOverlayEnabled.value && !repository.isNotificationEnabled.value) {
+                        Log.d(TAG, "Screen OFF: no features enabled, stopping service")
+                        stopSelf()
                     }
                 }
 
                 Intent.ACTION_SCREEN_ON -> {
-                    Log.d(TAG, "Screen ON: Cancelling sleep timer")
-                    stopMonitoringJob?.cancel()
+                    Log.d(TAG, "Screen ON: resuming monitoring")
                     if (!repository.isMonitoring.value) {
-                        Log.d(TAG, "Screen ON: Resuming monitoring")
                         startMonitoring()
                     }
                 }
@@ -161,15 +199,24 @@ class NetworkMonitorService : Service() {
         }
     }
 
-    private var stopMonitoringJob: Job? = null
-
     override fun onDestroy() {
         super.onDestroy()
         unregisterReceiver(screenReceiver)
         serviceJob?.cancel()
-        stopMonitoringJob?.cancel()
         overlayWindow.hide()
         repository.stopMonitoring()
         stopForeground(STOP_FOREGROUND_REMOVE)
     }
+
+    private data class NotificationSignature(
+        val speed: NetSpeedData,
+        val isLiveUpdate: Boolean,
+        val textUp: String,
+        val textDown: String,
+        val upFirst: Boolean,
+        val displayMode: Int,
+        val textSize: Float,
+        val unitSize: Float,
+        val hideFromDrawer: Boolean
+    )
 }

@@ -135,8 +135,10 @@ class SettingsActivity : ComponentActivity() {
 @Composable
 fun GeneralSection(viewModel: SettingsViewModel) {
     val context = LocalContext.current
-    val interval by viewModel.samplingInterval.collectAsState(initial = 1500L)
+    val interval by viewModel.samplingInterval.collectAsState(initial = 2000L)
     val isAutoStartEnabled by viewModel.isAutoStartServiceEnabled.collectAsState(initial = false)
+    val isBatterySaverMode by viewModel.isBatterySaverMode.collectAsState(initial = false)
+    val isLowTrafficThrottleEnabled by viewModel.isLowTrafficThrottleEnabled.collectAsState(initial = true)
     val canEnableAutoStart by viewModel.canEnableAutoStart.collectAsState()
     val hasOverlayPermission by viewModel.canOverlay.collectAsState()
     val hasNotificationPermission by viewModel.hasNotificationPermission.collectAsState()
@@ -153,6 +155,20 @@ fun GeneralSection(viewModel: SettingsViewModel) {
         title = { Text(stringResource(R.string.settings_sampling_interval)) },
         summary = { Text(stringResource(R.string.settings_sampling_interval_desc)) },
         valueText = { Text("${interval}ms") }
+    )
+
+    SwitchPreference(
+        value = isBatterySaverMode,
+        onValueChange = { viewModel.setBatterySaverMode(it) },
+        title = { Text(stringResource(R.string.settings_battery_saver_mode_title)) },
+        summary = { Text(stringResource(R.string.settings_battery_saver_mode_desc)) }
+    )
+
+    SwitchPreference(
+        value = isLowTrafficThrottleEnabled,
+        onValueChange = { viewModel.setLowTrafficThrottleEnabled(it) },
+        title = { Text(stringResource(R.string.settings_low_traffic_throttle_title)) },
+        summary = { Text(stringResource(R.string.settings_low_traffic_throttle_desc)) }
     )
 
 
@@ -353,6 +369,7 @@ fun NotificationSection(viewModel: SettingsViewModel) {
     val displayMode by viewModel.notificationDisplayMode.collectAsState(initial = 0)
     val textSize by viewModel.notificationTextSize.collectAsState(initial = 0.65f)
     val unitSize by viewModel.notificationUnitSize.collectAsState(initial = 0.35f)
+    val hideFromDrawer by viewModel.isHideNotificationDrawer.collectAsState(initial = false)
 
     PreferenceCategory(title = { Text(stringResource(R.string.settings_category_notification)) })
     SwitchPreference(
@@ -368,6 +385,12 @@ fun NotificationSection(viewModel: SettingsViewModel) {
             onValueChange = { viewModel.setLiveUpdateEnabled(it) },
             title = { Text(stringResource(R.string.config_enable_live_update)) },
             summary = { Text(stringResource(R.string.config_enable_live_update_desc)) }
+        )
+        SwitchPreference(
+            value = hideFromDrawer,
+            onValueChange = { viewModel.setHideNotificationDrawer(it) },
+            title = { Text(stringResource(R.string.settings_hide_notification_drawer_title)) },
+            summary = { Text(stringResource(R.string.settings_hide_notification_drawer_desc)) }
         )
         TextFieldPreference(
             value = textUp,

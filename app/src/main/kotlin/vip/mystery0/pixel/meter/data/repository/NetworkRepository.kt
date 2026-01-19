@@ -40,7 +40,7 @@ class NetworkRepository(
     private val _netSpeed = MutableStateFlow(NetSpeedData(0, 0))
     val netSpeed: StateFlow<NetSpeedData> = _netSpeed.asStateFlow()
 
-    private val _samplingInterval = MutableStateFlow(1500L)
+    private val _samplingInterval = MutableStateFlow(2000L)
     val samplingInterval: StateFlow<Long> = _samplingInterval.asStateFlow()
 
     private val _overlayBgColor = MutableStateFlow(0xCC000000.toInt())
@@ -91,12 +91,23 @@ class NetworkRepository(
     private val _isAutoStartServiceEnabled = MutableStateFlow(false)
     val isAutoStartServiceEnabled: StateFlow<Boolean> = _isAutoStartServiceEnabled.asStateFlow()
 
+    private val _isHideNotificationDrawer = MutableStateFlow(false)
+    val isHideNotificationDrawer: StateFlow<Boolean> = _isHideNotificationDrawer.asStateFlow()
+
+    private val _isBatterySaverMode = MutableStateFlow(false)
+    val isBatterySaverMode: StateFlow<Boolean> = _isBatterySaverMode.asStateFlow()
+
+    private val _isLowTrafficThrottleEnabled = MutableStateFlow(true)
+    val isLowTrafficThrottleEnabled: StateFlow<Boolean> = _isLowTrafficThrottleEnabled.asStateFlow()
+
     private var monitoringJob: Job? = null
     private val scope = CoroutineScope(Dispatchers.Default)
 
     private var lastTotalRxBytes = 0L
     private var lastTotalTxBytes = 0L
     private var lastTime = 0L
+    private var lastEmittedSpeed = NetSpeedData(0, 0) // Track last emitted speed
+    private var lowTrafficDurationMs = 0L
 
     init {
         runBlocking {
@@ -121,6 +132,9 @@ class NetworkRepository(
             _isHideFromRecents.value = dataStoreRepository.isHideFromRecents.first()
             _isOverlayUseDefaultColors.value = dataStoreRepository.isOverlayUseDefaultColors.first()
             _isAutoStartServiceEnabled.value = dataStoreRepository.isAutoStartServiceEnabled.first()
+            _isHideNotificationDrawer.value = dataStoreRepository.isHideNotificationDrawer.first()
+            _isBatterySaverMode.value = dataStoreRepository.isBatterySaverMode.first()
+            _isLowTrafficThrottleEnabled.value = dataStoreRepository.isLowTrafficThrottleEnabled.first()
         }
         scope.launch {
             dataStoreRepository.isLiveUpdateEnabled.collect { _isLiveUpdateEnabled.value = it }
@@ -197,6 +211,21 @@ class NetworkRepository(
         scope.launch {
             dataStoreRepository.isAutoStartServiceEnabled.collect {
                 _isAutoStartServiceEnabled.value = it
+            }
+        }
+        scope.launch {
+            dataStoreRepository.isHideNotificationDrawer.collect {
+                _isHideNotificationDrawer.value = it
+            }
+        }
+        scope.launch {
+            dataStoreRepository.isBatterySaverMode.collect {
+                _isBatterySaverMode.value = it
+            }
+        }
+        scope.launch {
+            dataStoreRepository.isLowTrafficThrottleEnabled.collect {
+                _isLowTrafficThrottleEnabled.value = it
             }
         }
     }
@@ -285,6 +314,18 @@ class NetworkRepository(
         scope.launch { dataStoreRepository.setAutoStartServiceEnabled(enabled) }
     }
 
+    fun setHideNotificationDrawer(hide: Boolean) {
+        scope.launch { dataStoreRepository.setHideNotificationDrawer(hide) }
+    }
+
+    fun setBatterySaverMode(enabled: Boolean) {
+        scope.launch { dataStoreRepository.setBatterySaverMode(enabled) }
+    }
+
+    fun setLowTrafficThrottleEnabled(enabled: Boolean) {
+        scope.launch { dataStoreRepository.setLowTrafficThrottleEnabled(enabled) }
+    }
+
     suspend fun getOverlayPosition(): Pair<Int, Int> {
         val x = dataStoreRepository.overlayX.first()
         val y = dataStoreRepository.overlayY.first()
@@ -312,7 +353,12 @@ class NetworkRepository(
             Log.i(TAG, "startMonitoring")
 
             while (isActive) {
-                val interval = _samplingInterval.value
+                val baseInterval = _samplingInterval.value
+                val batteryFactor = if (_isBatterySaverMode.value) 1.5 else 1.0
+                val idleFactor = if (_isLowTrafficThrottleEnabled.value &&
+                    lowTrafficDurationMs >= LOW_TRAFFIC_TRIGGER_MS
+                ) 1.5 else 1.0
+                val interval = (baseInterval * batteryFactor * idleFactor).toLong()
                 val startTime = System.currentTimeMillis()
 
                 // Get Traffic Data
@@ -333,10 +379,35 @@ class NetworkRepository(
                             val downloadSpeed = ((rxDelta * 1000) / timeDelta).coerceAtLeast(0)
                             val uploadSpeed = ((txDelta * 1000) / timeDelta).coerceAtLeast(0)
 
-                            _netSpeed.value = NetSpeedData(
+                            val newSpeed = NetSpeedData(
                                 downloadSpeed.coerceAtLeast(0),
                                 uploadSpeed.coerceAtLeast(0)
                             )
+
+                            // Only emit if speed changed significantly (> 5KB/s difference)
+                            // This reduces unnecessary UI updates and saves battery
+                            val downloadDiff = kotlin.math.abs(newSpeed.downloadSpeed - lastEmittedSpeed.downloadSpeed)
+                            val uploadDiff = kotlin.math.abs(newSpeed.uploadSpeed - lastEmittedSpeed.uploadSpeed)
+                            val threshold = 5 * 1024L // 5 KB/s
+
+                            if (downloadDiff > threshold || uploadDiff > threshold || 
+                                (newSpeed.downloadSpeed == 0L && lastEmittedSpeed.downloadSpeed > 0L) ||
+                                (newSpeed.uploadSpeed == 0L && lastEmittedSpeed.uploadSpeed > 0L)) {
+                                _netSpeed.value = newSpeed
+                                lastEmittedSpeed = newSpeed
+                            }
+
+                            if (_isLowTrafficThrottleEnabled.value) {
+                                val isLowTraffic = downloadSpeed < LOW_TRAFFIC_THRESHOLD_BPS &&
+                                    uploadSpeed < LOW_TRAFFIC_THRESHOLD_BPS
+                                if (isLowTraffic) {
+                                    lowTrafficDurationMs += interval
+                                } else {
+                                    lowTrafficDurationMs = 0L
+                                }
+                            } else {
+                                lowTrafficDurationMs = 0L
+                            }
                         }
                     }
 
@@ -358,10 +429,14 @@ class NetworkRepository(
         monitoringJob = null
         _isMonitoring.value = false
         _netSpeed.value = NetSpeedData(0, 0)
+        lastEmittedSpeed = NetSpeedData(0, 0)
+        lowTrafficDurationMs = 0L
     }
 
     companion object {
         private const val TAG = "NetworkRepository"
+        private const val LOW_TRAFFIC_THRESHOLD_BPS = 3 * 1024L
+        private const val LOW_TRAFFIC_TRIGGER_MS = 20_000L
 
         fun formatSpeedTextForLiveUpdate(bytes: Long): String {
             if (bytes < 1024) return "${bytes}B/s"

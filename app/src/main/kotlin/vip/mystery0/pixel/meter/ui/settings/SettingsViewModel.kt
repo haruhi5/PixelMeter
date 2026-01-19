@@ -54,6 +54,9 @@ class SettingsViewModel(
     val isHideFromRecents = repository.isHideFromRecents
     val isOverlayUseDefaultColors = repository.isOverlayUseDefaultColors
     val isAutoStartServiceEnabled = repository.isAutoStartServiceEnabled
+    val isHideNotificationDrawer = repository.isHideNotificationDrawer
+    val isBatterySaverMode = repository.isBatterySaverMode
+    val isLowTrafficThrottleEnabled = repository.isLowTrafficThrottleEnabled
 
     init {
         refreshOverlaySettings()
@@ -116,4 +119,13 @@ class SettingsViewModel(
 
     fun setAutoStartServiceEnabled(enabled: Boolean) =
         repository.setAutoStartServiceEnabled(enabled)
+
+    fun setHideNotificationDrawer(hide: Boolean) =
+        repository.setHideNotificationDrawer(hide)
+
+    fun setBatterySaverMode(enabled: Boolean) =
+        repository.setBatterySaverMode(enabled)
+
+    fun setLowTrafficThrottleEnabled(enabled: Boolean) =
+        repository.setLowTrafficThrottleEnabled(enabled)
 }

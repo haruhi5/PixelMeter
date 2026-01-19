@@ -26,6 +26,10 @@
     <string name="settings_category_general">常规设置</string>
     <string name="settings_sampling_interval">数据采样间隔时间</string>
     <string name="settings_sampling_interval_desc">过低的间隔时间会导致结果准确度降低，过高的间隔时间结果更准确，但是更新的很慢</string>
+    <string name="settings_low_traffic_throttle_title">低流量节流</string>
+    <string name="settings_low_traffic_throttle_desc">当流量接近为零时降低更新频率以节省电量</string>
+    <string name="settings_battery_saver_mode_title">省电模式</string>
+    <string name="settings_battery_saver_mode_desc">降低更新频率并跳过微小速度变化以节省电量</string>
     <string name="settings_auto_start_service_title">自动启动监听服务</string>
     <string name="settings_auto_start_service_desc">开机后自动启动网速监听服务</string>
     <string name="settings_auto_start_disabled_reason">需要悬浮窗或通知权限</string>
@@ -51,6 +55,8 @@
     <string name="settings_category_notification">通知设置</string>
     <string name="config_enable_live_update">启用实时更新</string>
     <string name="config_enable_live_update_desc">使用实时网速更新通知栏 (需要 Android 16+ 版本)</string>
+    <string name="settings_hide_notification_drawer_title">从通知栏隐藏</string>
+    <string name="settings_hide_notification_drawer_desc">仅在状态栏显示图标，通知栏中不显示</string>
     <string name="settings_notification_display_mode">显示内容</string>
     <string name="settings_display_mode_total">显示总网速</string>
     <string name="settings_display_mode_upload">仅显示上行网速</string>

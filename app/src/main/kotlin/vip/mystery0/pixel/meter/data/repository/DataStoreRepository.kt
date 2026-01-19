@@ -46,6 +46,9 @@ class DataStoreRepository(private val dataStore: DataStore<Preferences>) {
         val KEY_HIDE_FROM_RECENTS = booleanPreferencesKey("key_hide_from_recents")
         val KEY_OVERLAY_USE_DEFAULT_COLORS = booleanPreferencesKey("key_overlay_use_default_colors")
         val KEY_AUTO_START_SERVICE = booleanPreferencesKey("key_auto_start_service")
+        val KEY_HIDE_NOTIFICATION_DRAWER = booleanPreferencesKey("key_hide_notification_drawer")
+        val KEY_BATTERY_SAVER_MODE = booleanPreferencesKey("key_battery_saver_mode")
+        val KEY_LOW_TRAFFIC_THROTTLE = booleanPreferencesKey("key_low_traffic_throttle")
     }
 
     val isLiveUpdateEnabled: Flow<Boolean> = dataStore.data
@@ -81,7 +84,7 @@ class DataStoreRepository(private val dataStore: DataStore<Preferences>) {
 
     val samplingInterval: Flow<Long> = dataStore.data
         .map { preferences ->
-            preferences[KEY_SAMPLING_INTERVAL] ?: 1500L
+            preferences[KEY_SAMPLING_INTERVAL] ?: 2000L // Increased from 1500 to 2000 for battery
         }
 
     val overlayBgColor: Flow<Int> = dataStore.data
@@ -296,6 +299,39 @@ class DataStoreRepository(private val dataStore: DataStore<Preferences>) {
     suspend fun setAutoStartServiceEnabled(enabled: Boolean) {
         dataStore.edit { preferences ->
             preferences[KEY_AUTO_START_SERVICE] = enabled
+        }
+    }
+
+    val isHideNotificationDrawer: Flow<Boolean> = dataStore.data
+        .map { preferences ->
+            preferences[KEY_HIDE_NOTIFICATION_DRAWER] ?: false
+        }
+
+    suspend fun setHideNotificationDrawer(hide: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[KEY_HIDE_NOTIFICATION_DRAWER] = hide
+        }
+    }
+
+    val isBatterySaverMode: Flow<Boolean> = dataStore.data
+        .map { preferences ->
+            preferences[KEY_BATTERY_SAVER_MODE] ?: false
+        }
+
+    suspend fun setBatterySaverMode(enabled: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[KEY_BATTERY_SAVER_MODE] = enabled
+        }
+    }
+
+    val isLowTrafficThrottleEnabled: Flow<Boolean> = dataStore.data
+        .map { preferences ->
+            preferences[KEY_LOW_TRAFFIC_THROTTLE] ?: true
+        }
+
+    suspend fun setLowTrafficThrottleEnabled(enabled: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[KEY_LOW_TRAFFIC_THROTTLE] = enabled
         }
     }
 }

@@ -84,7 +84,8 @@ class NotificationHelper(private val context: Context) {
         upFirst: Boolean,
         displayMode: Int,
         textSize: Float = 0.65f,
-        unitSize: Float = 0.35f
+        unitSize: Float = 0.35f,
+        hideFromDrawer: Boolean = false
     ): Notification {
         val intent = Intent().apply {
             setClassName(context, MainActivity::class.java.name)
@@ -104,6 +105,13 @@ class NotificationHelper(private val context: Context) {
             .setContentIntent(pendingIntent)
             .setVisibility(NotificationCompat.VISIBILITY_SECRET)
             .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
+            .apply {
+                if (hideFromDrawer) {
+                    // Hide from notification drawer but keep in status bar
+                    setSilent(true)
+                    priority = NotificationCompat.PRIORITY_MIN
+                }
+            }
 
         if (!isNotificationEnabled) {
             // Notification Disabled (Static Mode)
