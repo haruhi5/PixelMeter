@@ -24,7 +24,9 @@ jobs:
         env:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
         run: |
-          echo "$KEYSTORE_BASE64" | base64 --decode > /tmp/key.jks
+          # Decode without adding an extra newline to avoid corrupting the keystore
+          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > /tmp/key.jks
+          ls -l /tmp/key.jks
       - name: Build with Gradle
         env:
           SIGN_KEY_STORE_FILE: "/tmp/key.jks"
